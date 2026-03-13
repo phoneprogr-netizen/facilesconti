@@ -1,0 +1,12 @@
+@model FacileSconti.Application.DTOs.CustomerDashboardDto
+<h1>Dashboard Cliente</h1>
+@if (Model is null) { <p>Nessun contratto attivo.</p> }
+else {
+<ul>
+<li>Azienda: @Model.BusinessName</li>
+<li>Piano: @Model.PlanName</li>
+<li>Giorni a scadenza: @Model.DaysToExpiration</li>
+<li>Coupon attivi: @Model.ActiveCoupons</li>
+<li>Download mese: @Model.MonthlyDownloads</li>
+</ul>
+}
