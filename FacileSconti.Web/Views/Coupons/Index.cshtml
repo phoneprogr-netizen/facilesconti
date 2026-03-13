@@ -1,0 +1,13 @@
+@model CouponListViewModel
+@{ ViewData["Title"] = "Coupon"; }
+<h1>Elenco coupon</h1>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-md-4"><input class="form-control" name="category" value="@Model.Category" placeholder="Categoria"/></div>
+  <div class="col-md-4"><input class="form-control" name="city" value="@Model.City" placeholder="Località"/></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100">Filtra</button></div>
+</form>
+<div class="row g-3">
+@foreach (var coupon in Model.Coupons) {
+  <div class="col-md-4"><partial name="_CouponCard" model="coupon" /></div>
+}
+</div>

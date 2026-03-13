@@ -1,0 +1,10 @@
+@model FacileSconti.Application.DTOs.AdminDashboardDto
+<h1>Dashboard Admin</h1>
+<ul>
+<li>Clienti attivi: @Model.ActiveCustomers</li>
+<li>Contratti attivi: @Model.ActiveContracts</li>
+<li>Contratti scaduti: @Model.ExpiredContracts</li>
+<li>Coupon attivi: @Model.ActiveCoupons</li>
+<li>Coupon scaduti: @Model.ExpiredCoupons</li>
+<li>Download totali: @Model.TotalDownloads</li>
+</ul>

@@ -1,0 +1,10 @@
+@model FacileSconti.Application.DTOs.CouponCardDto
+<h1>@Model.Title</h1>
+<p><strong>Categoria:</strong> @Model.CategoryName</p>
+<p><strong>Cliente:</strong> @Model.BusinessName</p>
+<p><strong>Scadenza:</strong> @Model.ValidTo</p>
+<form asp-action="Download" method="post">
+  @Html.AntiForgeryToken()
+  <input type="hidden" name="couponId" value="@Model.Id"/>
+  <button class="btn btn-success">Scarica coupon</button>
+</form>

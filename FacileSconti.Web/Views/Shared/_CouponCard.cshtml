@@ -1,0 +1,10 @@
+@model FacileSconti.Application.DTOs.CouponCardDto
+<div class="card h-100 shadow-sm">
+  <div class="card-body">
+    <div class="d-flex justify-content-between"><span class="badge bg-secondary">@Model.CategoryName</span>@if(Model.IsBoostedInHome){<span class="badge bg-warning text-dark">Boost</span>}</div>
+    <h5 class="mt-2">@Model.Title</h5>
+    <p class="small text-muted">@Model.BusinessName</p>
+    <p class="small">Scade il @Model.ValidTo</p>
+    <a class="btn btn-outline-primary btn-sm" asp-controller="Coupons" asp-action="Detail" asp-route-slug="@Model.Slug">Dettaglio</a>
+  </div>
+</div>

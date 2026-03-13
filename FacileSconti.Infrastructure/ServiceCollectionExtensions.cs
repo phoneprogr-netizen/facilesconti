@@ -1,0 +1,34 @@
+using FacileSconti.Application.Interfaces;
+using FacileSconti.Domain.Entities;
+using FacileSconti.Infrastructure.Data;
+using FacileSconti.Infrastructure.Services;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace FacileSconti.Infrastructure;
+
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseSqlServer(configuration.GetConnectionString("SqlServer")));
+
+        services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+            {
+                options.Password.RequireDigit = true;
+                options.Password.RequiredLength = 8;
+                options.User.RequireUniqueEmail = true;
+            })
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
+
+        services.AddScoped<ICouponService, CouponService>();
+        services.AddScoped<IDashboardService, DashboardService>();
+        services.AddSingleton<IQrCodeService, QrCodeService>();
+
+        return services;
+    }
+}

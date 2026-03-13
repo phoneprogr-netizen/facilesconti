@@ -1,0 +1,18 @@
+@model HomeViewModel
+@{ ViewData["Title"] = "Home"; }
+<section class="hero p-4 rounded-4 mb-4 text-white">
+  <h1>Il portale smart per coupon locali</h1>
+  <p>Scopri offerte, salva coupon e risparmia subito.</p>
+</section>
+<h2>Coupon in evidenza</h2>
+<div class="row g-3 mb-4">
+@foreach (var coupon in Model.FeaturedCoupons) {
+    <div class="col-md-4"><partial name="_CouponCard" model="coupon" /></div>
+}
+</div>
+<h2>Coupon boostati</h2>
+<div class="row g-3">
+@foreach (var coupon in Model.BoostedCoupons) {
+    <div class="col-md-4"><partial name="_CouponCard" model="coupon" /></div>
+}
+</div>
