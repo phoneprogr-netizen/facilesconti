@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using FacileSconti.Domain.Common;
 using FacileSconti.Domain.Enums;
+using Microsoft.AspNet.Identity.EntityFramework;
 
 namespace FacileSconti.Domain.Entities;
 
