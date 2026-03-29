@@ -1,0 +1,31 @@
+SETUP DATABASE FACILESconti (SQL Server)
+
+Cartella con gli script di avvio:
+- FacileSconti.Database/start_db
+
+Contenuto cartella:
+1) 00_create_database.sql
+   - Crea il database "FacileSconti" se non esiste.
+2) 01_run_all.sql
+   - Esegue in ordine gli script SQL applicativi (schema, vincoli, indici, viste, seed).
+   - Richiede SQLCMD Mode (SSMS: Query -> SQLCMD Mode).
+
+Ordine completo da usare:
+1. Esegui 00_create_database.sql
+2. Se necessario, crea le tabelle Identity (AspNetUsers, AspNetRoles, ecc.) con script Microsoft Identity.
+3. Esegui 01_run_all.sql
+
+Dove mettere gli accessi al database:
+- File principale: FacileSconti.Web/appsettings.json
+- Chiave da configurare:
+  ConnectionStrings:SqlServer
+
+Esempio:
+"ConnectionStrings": {
+  "SqlServer": "Server=localhost;Database=FacileSconti;User Id=sa;Password=LA_TUA_PASSWORD;TrustServerCertificate=True"
+}
+
+Consigliato per sicurezza:
+- In sviluppo usa User Secrets o variabili ambiente invece di password in chiaro.
+- Variabile ambiente equivalente:
+  ConnectionStrings__SqlServer
