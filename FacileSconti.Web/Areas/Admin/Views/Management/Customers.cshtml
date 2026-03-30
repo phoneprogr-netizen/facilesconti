@@ -1,1 +1,44 @@
-<h1>Admin - Customers</h1>
+@model IReadOnlyList<FacileSconti.Domain.Entities.CustomerBusiness>
+@{
+    ViewData["Title"] = "Gestione Clienti";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Gestione Clienti</h1>
+    <a class="btn btn-primary" asp-action="NewCustomer">Nuovo cliente</a>
+</div>
+
+@if (TempData["Success"] is string message)
+{
+    <div class="alert alert-success">@message</div>
+}
+
+<table class="table table-striped table-hover align-middle">
+    <thead>
+    <tr>
+        <th>Ragione sociale</th>
+        <th>Email</th>
+        <th>Città</th>
+        <th>Partita IVA</th>
+        <th class="text-end">Azioni</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>@item.Name</td>
+            <td>@item.Email</td>
+            <td>@item.City (@item.Province)</td>
+            <td>@item.VatNumber</td>
+            <td class="text-end">
+                <a class="btn btn-outline-secondary btn-sm" asp-action="EditCustomer" asp-route-id="@item.Id">Modifica</a>
+                <form class="d-inline" method="post" asp-action="DeleteCustomer" asp-route-id="@item.Id" onsubmit="return confirm('Confermi eliminazione cliente?');">
+                    @Html.AntiForgeryToken()
+                    <button class="btn btn-outline-danger btn-sm" type="submit">Elimina</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
