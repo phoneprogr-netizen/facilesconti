@@ -1,18 +1,55 @@
 @model HomeViewModel
 @{ ViewData["Title"] = "Home"; }
-<section class="hero p-4 rounded-4 mb-4 text-white">
-  <h1>Il portale smart per coupon locali</h1>
-  <p>Scopri offerte, salva coupon e risparmia subito.</p>
+
+<section class="hero p-4 p-lg-5 rounded-4 mb-4 text-white">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+            <h1 class="display-6 fw-bold mb-3">Il portale smart per coupon locali</h1>
+            <p class="lead mb-4">Scopri offerte, salva coupon e risparmia subito vicino a te.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a asp-controller="Coupons" asp-action="Index" class="btn btn-light">Esplora coupon</a>
+                <a asp-controller="Account" asp-action="RegisterBusiness" class="btn btn-outline-light">Pubblica come cliente</a>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="hero-stat rounded-4 p-3 bg-white text-dark">
+                <div class="fw-semibold">Piattaforma multi-ruolo pronta</div>
+                <ul class="mb-0 ps-3 small mt-2">
+                    <li>Accesso Admin con dashboard dedicata</li>
+                    <li>Area Cliente per gestione coupon</li>
+                    <li>Area Utente finale per salvataggi</li>
+                </ul>
+            </div>
+        </div>
+    </div>
 </section>
-<h2>Coupon in evidenza</h2>
+
+<section class="row g-3 mb-4">
+    <div class="col-md-4"><div class="public-info-card p-3 rounded-4 h-100"><h3 class="h6">Offerte locali</h3><p class="mb-0 small text-secondary">Coupon per ristoranti, benessere e servizi del tuo territorio.</p></div></div>
+    <div class="col-md-4"><div class="public-info-card p-3 rounded-4 h-100"><h3 class="h6">Coupon digitali</h3><p class="mb-0 small text-secondary">Download rapido con codice univoco e tracciamento utilizzi.</p></div></div>
+    <div class="col-md-4"><div class="public-info-card p-3 rounded-4 h-100"><h3 class="h6">Boost in homepage</h3><p class="mb-0 small text-secondary">I clienti possono promuovere i coupon con piani boost dedicati.</p></div></div>
+</section>
+
+<h2 class="h4">Coupon in evidenza</h2>
 <div class="row g-3 mb-4">
-@foreach (var coupon in Model.FeaturedCoupons) {
+@foreach (var coupon in Model.FeaturedCoupons)
+{
     <div class="col-md-4"><partial name="_CouponCard" model="coupon" /></div>
 }
+@if (!Model.FeaturedCoupons.Any())
+{
+    <div class="col-12"><div class="alert alert-info rounded-4">Nessun coupon attivo in evidenza al momento.</div></div>
+}
 </div>
-<h2>Coupon boostati</h2>
+
+<h2 class="h4">Coupon boostati</h2>
 <div class="row g-3">
-@foreach (var coupon in Model.BoostedCoupons) {
+@foreach (var coupon in Model.BoostedCoupons)
+{
     <div class="col-md-4"><partial name="_CouponCard" model="coupon" /></div>
+}
+@if (!Model.BoostedCoupons.Any())
+{
+    <div class="col-12"><div class="alert alert-info rounded-4">Nessun coupon boostato attivo al momento.</div></div>
 }
 </div>

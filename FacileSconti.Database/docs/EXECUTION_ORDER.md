@@ -7,6 +7,7 @@
 5. `03_indexes/001_indexes.sql`
 6. `05_views/001_dashboard_views.sql`
 7. `04_seed/001_seed_core.sql`
+8. `04_seed/002_seed_demo_data.sql`
 
 ## Strategia evolutiva
 - Ogni modifica DB va in `06_updates` con script incrementale.

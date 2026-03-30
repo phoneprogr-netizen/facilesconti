@@ -1,1 +1,75 @@
-<h1>RegisterBusiness</h1>
+@{
+    ViewData["Title"] = "Diventa Cliente";
+}
+
+<div class="row">
+    <div class="col-xl-9 mx-auto">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4 p-lg-5">
+                <h1 class="h3 mb-2">Registrazione Cliente Business</h1>
+                <p class="text-secondary mb-4">Compila i dati azienda e del referente per iniziare a pubblicare coupon.</p>
+
+                <div asp-validation-summary="All" class="text-danger small mb-3"></div>
+
+                <form method="post" asp-action="RegisterBusiness" class="row g-3">
+                    @Html.AntiForgeryToken()
+
+                    <div class="col-md-6">
+                        <label class="form-label">Ragione sociale</label>
+                        <input class="form-control" name="businessName" required />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Partita IVA</label>
+                        <input class="form-control" name="vatNumber" required />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Codice fiscale</label>
+                        <input class="form-control" name="fiscalCode" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Email account</label>
+                        <input type="email" class="form-control" name="email" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Telefono</label>
+                        <input class="form-control" name="phone" required />
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Indirizzo</label>
+                        <input class="form-control" name="address" required />
+                    </div>
+
+                    <div class="col-md-8">
+                        <label class="form-label">Città</label>
+                        <input class="form-control" name="city" required />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Provincia</label>
+                        <input class="form-control" name="province" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Nome referente</label>
+                        <input class="form-control" name="firstName" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Cognome referente</label>
+                        <input class="form-control" name="lastName" required />
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" name="password" minlength="8" required />
+                    </div>
+
+                    <div class="col-12 pt-2">
+                        <button type="submit" class="btn btn-primary">Crea account cliente</button>
+                        <a asp-action="Login" class="btn btn-link">Hai già un account? Accedi</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

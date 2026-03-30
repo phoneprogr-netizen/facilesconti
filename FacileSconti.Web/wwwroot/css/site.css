@@ -1,2 +1,14 @@
-.hero { background: linear-gradient(135deg,#0d6efd,#0dcaf0); }
-.card { border-radius: 1rem; }
+.hero {
+  background: linear-gradient(135deg,#0d6efd,#0dcaf0);
+}
+
+.card,
+.hero-stat,
+.public-info-card {
+  border-radius: 1rem;
+}
+
+.public-info-card {
+  border: 1px solid #e9ecef;
+  background: #fff;
+}

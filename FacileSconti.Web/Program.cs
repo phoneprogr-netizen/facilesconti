@@ -37,7 +37,8 @@ using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Identity.RoleManager<Microsoft.AspNetCore.Identity.IdentityRole>>();
     var userManager = scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<FacileSconti.Domain.Entities.ApplicationUser>>();
-    await IdentitySeeder.SeedAsync(roleManager, userManager);
+    var db = scope.ServiceProvider.GetRequiredService<FacileSconti.Infrastructure.Data.ApplicationDbContext>();
+    await IdentitySeeder.SeedAsync(roleManager, userManager, db);
 }
 
 app.Run();
