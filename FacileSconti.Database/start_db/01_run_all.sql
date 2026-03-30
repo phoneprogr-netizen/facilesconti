@@ -10,3 +10,5 @@ Questo script richiama tutti gli script necessari in ordine.
 :r ..\03_indexes\001_indexes.sql
 :r ..\05_views\001_dashboard_views.sql
 :r ..\04_seed\001_seed_core.sql
+
+:r ..\04_seed\002_seed_demo_data.sql

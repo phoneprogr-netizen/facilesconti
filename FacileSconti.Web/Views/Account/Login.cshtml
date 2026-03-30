@@ -1,1 +1,43 @@
-<h1>Login</h1>
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-5">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-4 p-lg-5">
+                <h1 class="h3 mb-2">Accedi a Facile Sconti</h1>
+                <p class="text-secondary mb-4">Area Admin, Cliente e Utente Finale.</p>
+
+                <div asp-validation-summary="All" class="text-danger small mb-3"></div>
+
+                <form method="post" asp-action="Login">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" name="password" class="form-control" required />
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" name="rememberMe" value="true" id="rememberMe" />
+                        <label class="form-check-label" for="rememberMe">Ricordami</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Accedi</button>
+                </form>
+
+                <div class="mt-4 small">
+                    <div><strong>Admin demo:</strong> admin@facilesconti.local / Admin123!</div>
+                    <div class="mt-2">Non hai un account? <a asp-action="RegisterBusiness">Diventa cliente</a> oppure <a asp-action="RegisterEndUser">registrati come utente finale</a>.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
