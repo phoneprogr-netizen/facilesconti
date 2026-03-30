@@ -1,5 +1,11 @@
+using FacileSconti.Domain.Entities;
+using FacileSconti.Domain.Enums;
+using FacileSconti.Infrastructure.Data;
+using FacileSconti.Web.Areas.Admin.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 
 namespace FacileSconti.Web.Areas.Admin.Controllers;
 
@@ -7,13 +13,500 @@ namespace FacileSconti.Web.Areas.Admin.Controllers;
 [Authorize(Roles = "Admin")]
 public class ManagementController : Controller
 {
-    public IActionResult Customers() => View();
-    public IActionResult Contracts() => View();
+    private readonly ApplicationDbContext _db;
+
+    public ManagementController(ApplicationDbContext db) => _db = db;
+
+    public async Task<IActionResult> Customers(CancellationToken cancellationToken)
+    {
+        var items = await _db.CustomerBusinesses
+            .Include(x => x.OwnerUser)
+            .AsNoTracking()
+            .OrderBy(x => x.Name)
+            .ToListAsync(cancellationToken);
+        return View(items);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> NewCustomer(CancellationToken cancellationToken)
+    {
+        var vm = new AdminCustomerFormViewModel();
+        await PopulateOwnerUsersAsync(vm, null, cancellationToken);
+        return View("CustomerForm", vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> NewCustomer(AdminCustomerFormViewModel model, CancellationToken cancellationToken)
+    {
+        await PopulateOwnerUsersAsync(model, model.OwnerUserId, cancellationToken);
+        if (!ModelState.IsValid)
+            return View("CustomerForm", model);
+
+        if (string.IsNullOrWhiteSpace(model.OwnerUserId))
+        {
+            ModelState.AddModelError(nameof(model.OwnerUserId), "Seleziona un utente proprietario.");
+            return View("CustomerForm", model);
+        }
+
+        var entity = new CustomerBusiness
+        {
+            Name = model.Name,
+            VatNumber = model.VatNumber,
+            FiscalCode = model.FiscalCode,
+            Email = model.Email,
+            Phone = model.Phone,
+            Address = model.Address,
+            City = model.City,
+            Province = model.Province,
+            Description = model.Description,
+            OwnerUserId = model.OwnerUserId
+        };
+
+        _db.CustomerBusinesses.Add(entity);
+        await _db.SaveChangesAsync(cancellationToken);
+        TempData["Success"] = "Cliente creato con successo.";
+        return RedirectToAction(nameof(Customers));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> EditCustomer(int id, CancellationToken cancellationToken)
+    {
+        var entity = await _db.CustomerBusinesses.FindAsync([id], cancellationToken);
+        if (entity is null) return NotFound();
+
+        var vm = new AdminCustomerFormViewModel
+        {
+            Id = entity.Id,
+            Name = entity.Name,
+            VatNumber = entity.VatNumber,
+            FiscalCode = entity.FiscalCode,
+            Email = entity.Email,
+            Phone = entity.Phone,
+            Address = entity.Address,
+            City = entity.City,
+            Province = entity.Province,
+            Description = entity.Description,
+            OwnerUserId = entity.OwnerUserId
+        };
+
+        await PopulateOwnerUsersAsync(vm, entity.OwnerUserId, cancellationToken);
+        return View("CustomerForm", vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditCustomer(AdminCustomerFormViewModel model, CancellationToken cancellationToken)
+    {
+        if (model.Id is null) return NotFound();
+
+        var entity = await _db.CustomerBusinesses.FindAsync([model.Id.Value], cancellationToken);
+        if (entity is null) return NotFound();
+
+        await PopulateOwnerUsersAsync(model, model.OwnerUserId ?? entity.OwnerUserId, cancellationToken);
+        if (!ModelState.IsValid)
+            return View("CustomerForm", model);
+
+        if (string.IsNullOrWhiteSpace(model.OwnerUserId))
+        {
+            ModelState.AddModelError(nameof(model.OwnerUserId), "Seleziona un utente proprietario.");
+            return View("CustomerForm", model);
+        }
+
+        entity.Name = model.Name;
+        entity.VatNumber = model.VatNumber;
+        entity.FiscalCode = model.FiscalCode;
+        entity.Email = model.Email;
+        entity.Phone = model.Phone;
+        entity.Address = model.Address;
+        entity.City = model.City;
+        entity.Province = model.Province;
+        entity.Description = model.Description;
+        entity.OwnerUserId = model.OwnerUserId;
+
+        await _db.SaveChangesAsync(cancellationToken);
+        TempData["Success"] = "Cliente aggiornato con successo.";
+        return RedirectToAction(nameof(Customers));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteCustomer(int id, CancellationToken cancellationToken)
+    {
+        var entity = await _db.CustomerBusinesses.FindAsync([id], cancellationToken);
+        if (entity is null) return NotFound();
+
+        _db.CustomerBusinesses.Remove(entity);
+        await _db.SaveChangesAsync(cancellationToken);
+        TempData["Success"] = "Cliente eliminato.";
+        return RedirectToAction(nameof(Customers));
+    }
+
+    public async Task<IActionResult> Contracts(CancellationToken cancellationToken)
+    {
+        var items = await _db.CustomerContracts
+            .Include(x => x.CustomerBusiness)
+            .Include(x => x.SubscriptionPlan)
+            .AsNoTracking()
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync(cancellationToken);
+        return View(items);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> NewContract(CancellationToken cancellationToken)
+    {
+        var vm = new AdminContractFormViewModel();
+        await PopulateContractDependenciesAsync(vm, cancellationToken);
+        return View("ContractForm", vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> NewContract(AdminContractFormViewModel model, CancellationToken cancellationToken)
+    {
+        await PopulateContractDependenciesAsync(model, cancellationToken);
+        if (!ModelState.IsValid)
+            return View("ContractForm", model);
+
+        var entity = new CustomerContract
+        {
+            CustomerBusinessId = model.CustomerBusinessId,
+            SubscriptionPlanId = model.SubscriptionPlanId,
+            StartDate = model.StartDate,
+            EndDate = model.EndDate,
+            Status = model.Status,
+            MaxActiveCoupons = model.MaxActiveCoupons,
+            MaxDownloadsPerCoupon = model.MaxDownloadsPerCoupon,
+            UnlimitedCoupons = model.UnlimitedCoupons,
+            UnlimitedDownloads = model.UnlimitedDownloads,
+            AgreedPrice = model.AgreedPrice,
+            InitialPaymentMethod = model.InitialPaymentMethod,
+            AutoRenewRequested = model.AutoRenewRequested,
+            AdminNotes = model.AdminNotes
+        };
+
+        _db.CustomerContracts.Add(entity);
+        await _db.SaveChangesAsync(cancellationToken);
+        TempData["Success"] = "Contratto creato con successo.";
+        return RedirectToAction(nameof(Contracts));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> EditContract(int id, CancellationToken cancellationToken)
+    {
+        var entity = await _db.CustomerContracts.FindAsync([id], cancellationToken);
+        if (entity is null) return NotFound();
+
+        var vm = new AdminContractFormViewModel
+        {
+            Id = entity.Id,
+            CustomerBusinessId = entity.CustomerBusinessId,
+            SubscriptionPlanId = entity.SubscriptionPlanId,
+            StartDate = entity.StartDate,
+            EndDate = entity.EndDate,
+            Status = entity.Status,
+            MaxActiveCoupons = entity.MaxActiveCoupons,
+            MaxDownloadsPerCoupon = entity.MaxDownloadsPerCoupon,
+            UnlimitedCoupons = entity.UnlimitedCoupons,
+            UnlimitedDownloads = entity.UnlimitedDownloads,
+            AgreedPrice = entity.AgreedPrice,
+            InitialPaymentMethod = entity.InitialPaymentMethod,
+            AutoRenewRequested = entity.AutoRenewRequested,
+            AdminNotes = entity.AdminNotes
+        };
+
+        await PopulateContractDependenciesAsync(vm, cancellationToken);
+        return View("ContractForm", vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditContract(AdminContractFormViewModel model, CancellationToken cancellationToken)
+    {
+        if (model.Id is null) return NotFound();
+
+        var entity = await _db.CustomerContracts.FindAsync([model.Id.Value], cancellationToken);
+        if (entity is null) return NotFound();
+
+        await PopulateContractDependenciesAsync(model, cancellationToken);
+        if (!ModelState.IsValid)
+            return View("ContractForm", model);
+
+        entity.CustomerBusinessId = model.CustomerBusinessId;
+        entity.SubscriptionPlanId = model.SubscriptionPlanId;
+        entity.StartDate = model.StartDate;
+        entity.EndDate = model.EndDate;
+        entity.Status = model.Status;
+        entity.MaxActiveCoupons = model.MaxActiveCoupons;
+        entity.MaxDownloadsPerCoupon = model.MaxDownloadsPerCoupon;
+        entity.UnlimitedCoupons = model.UnlimitedCoupons;
+        entity.UnlimitedDownloads = model.UnlimitedDownloads;
+        entity.AgreedPrice = model.AgreedPrice;
+        entity.InitialPaymentMethod = model.InitialPaymentMethod;
+        entity.AutoRenewRequested = model.AutoRenewRequested;
+        entity.AdminNotes = model.AdminNotes;
+
+        await _db.SaveChangesAsync(cancellationToken);
+        TempData["Success"] = "Contratto aggiornato con successo.";
+        return RedirectToAction(nameof(Contracts));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteContract(int id, CancellationToken cancellationToken)
+    {
+        var entity = await _db.CustomerContracts.FindAsync([id], cancellationToken);
+        if (entity is null) return NotFound();
+
+        _db.CustomerContracts.Remove(entity);
+        await _db.SaveChangesAsync(cancellationToken);
+        TempData["Success"] = "Contratto eliminato.";
+        return RedirectToAction(nameof(Contracts));
+    }
+
+    public async Task<IActionResult> Coupons(CancellationToken cancellationToken)
+    {
+        var items = await _db.Coupons
+            .Include(x => x.CustomerBusiness)
+            .Include(x => x.CouponCategory)
+            .AsNoTracking()
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync(cancellationToken);
+        return View(items);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> NewCoupon(CancellationToken cancellationToken)
+    {
+        var vm = new AdminCouponFormViewModel();
+        await PopulateCouponDependenciesAsync(vm, cancellationToken);
+        return View("CouponForm", vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> NewCoupon(AdminCouponFormViewModel model, CancellationToken cancellationToken)
+    {
+        await PopulateCouponDependenciesAsync(model, cancellationToken);
+        if (!ModelState.IsValid)
+            return View("CouponForm", model);
+
+        var exists = await _db.Coupons.AnyAsync(x => x.Slug == model.Slug, cancellationToken);
+        if (exists)
+        {
+            ModelState.AddModelError(nameof(model.Slug), "Slug già esistente.");
+            return View("CouponForm", model);
+        }
+
+        var entity = new Coupon
+        {
+            CustomerBusinessId = model.CustomerBusinessId,
+            CouponCategoryId = model.CouponCategoryId,
+            Title = model.Title,
+            Slug = model.Slug,
+            ShortDescription = model.ShortDescription,
+            FullDescription = model.FullDescription,
+            OriginalPrice = model.OriginalPrice,
+            DiscountedPrice = model.DiscountedPrice,
+            CouponType = model.CouponType,
+            Status = model.Status,
+            ValidFrom = model.ValidFrom,
+            ValidTo = model.ValidTo,
+            MaxDownloads = model.MaxDownloads,
+            IsFeatured = model.IsFeatured,
+            IsBoostedInHome = model.IsBoostedInHome
+        };
+
+        _db.Coupons.Add(entity);
+        await _db.SaveChangesAsync(cancellationToken);
+        TempData["Success"] = "Coupon creato con successo.";
+        return RedirectToAction(nameof(Coupons));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> EditCoupon(int id, CancellationToken cancellationToken)
+    {
+        var entity = await _db.Coupons.FindAsync([id], cancellationToken);
+        if (entity is null) return NotFound();
+
+        var vm = new AdminCouponFormViewModel
+        {
+            Id = entity.Id,
+            CustomerBusinessId = entity.CustomerBusinessId,
+            CouponCategoryId = entity.CouponCategoryId,
+            Title = entity.Title,
+            Slug = entity.Slug,
+            ShortDescription = entity.ShortDescription,
+            FullDescription = entity.FullDescription,
+            OriginalPrice = entity.OriginalPrice,
+            DiscountedPrice = entity.DiscountedPrice,
+            CouponType = entity.CouponType,
+            Status = entity.Status,
+            ValidFrom = entity.ValidFrom,
+            ValidTo = entity.ValidTo,
+            MaxDownloads = entity.MaxDownloads,
+            IsFeatured = entity.IsFeatured,
+            IsBoostedInHome = entity.IsBoostedInHome
+        };
+
+        await PopulateCouponDependenciesAsync(vm, cancellationToken);
+        return View("CouponForm", vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditCoupon(AdminCouponFormViewModel model, CancellationToken cancellationToken)
+    {
+        if (model.Id is null) return NotFound();
+
+        var entity = await _db.Coupons.FindAsync([model.Id.Value], cancellationToken);
+        if (entity is null) return NotFound();
+
+        await PopulateCouponDependenciesAsync(model, cancellationToken);
+        if (!ModelState.IsValid)
+            return View("CouponForm", model);
+
+        var duplicatedSlug = await _db.Coupons.AnyAsync(x => x.Id != model.Id.Value && x.Slug == model.Slug, cancellationToken);
+        if (duplicatedSlug)
+        {
+            ModelState.AddModelError(nameof(model.Slug), "Slug già esistente.");
+            return View("CouponForm", model);
+        }
+
+        entity.CustomerBusinessId = model.CustomerBusinessId;
+        entity.CouponCategoryId = model.CouponCategoryId;
+        entity.Title = model.Title;
+        entity.Slug = model.Slug;
+        entity.ShortDescription = model.ShortDescription;
+        entity.FullDescription = model.FullDescription;
+        entity.OriginalPrice = model.OriginalPrice;
+        entity.DiscountedPrice = model.DiscountedPrice;
+        entity.CouponType = model.CouponType;
+        entity.Status = model.Status;
+        entity.ValidFrom = model.ValidFrom;
+        entity.ValidTo = model.ValidTo;
+        entity.MaxDownloads = model.MaxDownloads;
+        entity.IsFeatured = model.IsFeatured;
+        entity.IsBoostedInHome = model.IsBoostedInHome;
+
+        await _db.SaveChangesAsync(cancellationToken);
+        TempData["Success"] = "Coupon aggiornato con successo.";
+        return RedirectToAction(nameof(Coupons));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteCoupon(int id, CancellationToken cancellationToken)
+    {
+        var entity = await _db.Coupons.FindAsync([id], cancellationToken);
+        if (entity is null) return NotFound();
+
+        _db.Coupons.Remove(entity);
+        await _db.SaveChangesAsync(cancellationToken);
+        TempData["Success"] = "Coupon eliminato.";
+        return RedirectToAction(nameof(Coupons));
+    }
+
+    public async Task<IActionResult> Statistics(CancellationToken cancellationToken)
+    {
+        var customerBreakdown = await _db.CustomerBusinesses
+            .AsNoTracking()
+            .Select(c => new CustomerStatsItem
+            {
+                CustomerId = c.Id,
+                CustomerName = c.Name,
+                Contracts = c.Contracts.Count,
+                ActiveContracts = c.Contracts.Count(x => x.Status == ContractStatus.Active),
+                Coupons = c.Coupons.Count,
+                ActiveCoupons = c.Coupons.Count(x => x.Status == CouponStatus.Active),
+                TotalPaid = c.Contracts
+                    .SelectMany(ct => ct.Payments)
+                    .Where(p => p.PaymentStatus == PaymentStatus.Paid)
+                    .Sum(p => (decimal?)p.Amount) ?? 0
+            })
+            .OrderByDescending(x => x.TotalPaid)
+            .ToListAsync(cancellationToken);
+
+        var vm = new AdminStatisticsViewModel
+        {
+            TotalCustomers = await _db.CustomerBusinesses.CountAsync(cancellationToken),
+            TotalContracts = await _db.CustomerContracts.CountAsync(cancellationToken),
+            ActiveContracts = await _db.CustomerContracts.CountAsync(x => x.Status == ContractStatus.Active, cancellationToken),
+            TotalCoupons = await _db.Coupons.CountAsync(cancellationToken),
+            ActiveCoupons = await _db.Coupons.CountAsync(x => x.Status == CouponStatus.Active, cancellationToken),
+            TotalPayments = await _db.PaymentRecords.CountAsync(cancellationToken),
+            PaidAmount = await _db.PaymentRecords.Where(x => x.PaymentStatus == PaymentStatus.Paid).SumAsync(x => (decimal?)x.Amount, cancellationToken) ?? 0,
+            PendingAmount = await _db.PaymentRecords.Where(x => x.PaymentStatus == PaymentStatus.Pending).SumAsync(x => (decimal?)x.Amount, cancellationToken) ?? 0,
+            CustomerBreakdown = customerBreakdown
+        };
+
+        return View(vm);
+    }
+
+    public async Task<IActionResult> Payments(CancellationToken cancellationToken)
+    {
+        var payments = await _db.PaymentRecords
+            .AsNoTracking()
+            .Include(x => x.CustomerContract)
+            .ThenInclude(x => x.CustomerBusiness)
+            .OrderByDescending(x => x.PaymentDate)
+            .Take(200)
+            .ToListAsync(cancellationToken);
+        return View(payments);
+    }
+
     public IActionResult Plans() => View();
-    public IActionResult Coupons() => View();
     public IActionResult Categories() => View();
     public IActionResult BusinessRequests() => View();
-    public IActionResult Payments() => View();
     public IActionResult Cms() => View();
     public IActionResult AuditLogs() => View();
+
+    private async Task PopulateOwnerUsersAsync(AdminCustomerFormViewModel model, string? selectedOwnerId, CancellationToken cancellationToken)
+    {
+        var assignedOwnerIds = await _db.CustomerBusinesses
+            .Where(x => x.OwnerUserId != selectedOwnerId)
+            .Select(x => x.OwnerUserId)
+            .ToListAsync(cancellationToken);
+
+        model.AvailableOwnerUsers = await _db.Users
+            .Where(u => u.UserType == UserType.Customer && !assignedOwnerIds.Contains(u.Id))
+            .OrderBy(u => u.Email)
+            .Select(u => new SelectListItem
+            {
+                Value = u.Id,
+                Text = $"{u.Email} ({u.FirstName} {u.LastName})"
+            })
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task PopulateContractDependenciesAsync(AdminContractFormViewModel model, CancellationToken cancellationToken)
+    {
+        model.AvailableCustomers = await _db.CustomerBusinesses
+            .AsNoTracking()
+            .OrderBy(x => x.Name)
+            .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+            .ToListAsync(cancellationToken);
+
+        model.AvailablePlans = await _db.SubscriptionPlans
+            .AsNoTracking()
+            .OrderBy(x => x.Name)
+            .Select(x => new SelectListItem($"{x.Name} ({x.BasePrice:0.00}€)", x.Id.ToString()))
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task PopulateCouponDependenciesAsync(AdminCouponFormViewModel model, CancellationToken cancellationToken)
+    {
+        model.AvailableCustomers = await _db.CustomerBusinesses
+            .AsNoTracking()
+            .OrderBy(x => x.Name)
+            .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+            .ToListAsync(cancellationToken);
+
+        model.AvailableCategories = await _db.CouponCategories
+            .AsNoTracking()
+            .OrderBy(x => x.Name)
+            .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+            .ToListAsync(cancellationToken);
+    }
 }

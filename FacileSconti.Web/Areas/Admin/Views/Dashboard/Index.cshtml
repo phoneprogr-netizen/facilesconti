@@ -1,4 +1,8 @@
 @model FacileSconti.Application.DTOs.AdminDashboardDto
+@{
+    ViewData["Title"] = "Dashboard Admin";
+}
+
 <h1>Dashboard Admin</h1>
 <ul>
 <li>Clienti attivi: @Model.ActiveCustomers</li>
@@ -8,3 +12,11 @@
 <li>Coupon scaduti: @Model.ExpiredCoupons</li>
 <li>Download totali: @Model.TotalDownloads</li>
 </ul>
+
+<div class="d-flex flex-wrap gap-2 mt-4">
+    <a class="btn btn-outline-primary" asp-area="Admin" asp-controller="Management" asp-action="Customers">Clienti</a>
+    <a class="btn btn-outline-primary" asp-area="Admin" asp-controller="Management" asp-action="Contracts">Contratti</a>
+    <a class="btn btn-outline-primary" asp-area="Admin" asp-controller="Management" asp-action="Coupons">Coupon</a>
+    <a class="btn btn-outline-primary" asp-area="Admin" asp-controller="Management" asp-action="Payments">Pagamenti</a>
+    <a class="btn btn-primary" asp-area="Admin" asp-controller="Management" asp-action="Statistics">Statistiche</a>
+</div>

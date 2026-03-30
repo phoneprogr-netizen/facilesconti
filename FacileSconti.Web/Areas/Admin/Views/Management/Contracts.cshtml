@@ -1,1 +1,41 @@
-<h1>Admin - Contracts</h1>
+@model IReadOnlyList<FacileSconti.Domain.Entities.CustomerContract>
+@{
+    ViewData["Title"] = "Gestione Contratti";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Gestione Contratti</h1>
+    <a class="btn btn-primary" asp-action="NewContract">Nuovo contratto</a>
+</div>
+
+<table class="table table-striped table-hover align-middle">
+    <thead>
+    <tr>
+        <th>Cliente</th>
+        <th>Piano</th>
+        <th>Periodo</th>
+        <th>Stato</th>
+        <th>Prezzo</th>
+        <th class="text-end">Azioni</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>@item.CustomerBusiness.Name</td>
+            <td>@item.SubscriptionPlan.Name</td>
+            <td>@item.StartDate - @item.EndDate</td>
+            <td>@item.Status</td>
+            <td>@item.AgreedPrice.ToString("0.00") €</td>
+            <td class="text-end">
+                <a class="btn btn-outline-secondary btn-sm" asp-action="EditContract" asp-route-id="@item.Id">Modifica</a>
+                <form class="d-inline" method="post" asp-action="DeleteContract" asp-route-id="@item.Id" onsubmit="return confirm('Confermi eliminazione contratto?');">
+                    @Html.AntiForgeryToken()
+                    <button class="btn btn-outline-danger btn-sm" type="submit">Elimina</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
