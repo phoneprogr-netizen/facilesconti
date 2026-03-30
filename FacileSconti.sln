@@ -10,8 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FacileSconti.Infrastructure
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FacileSconti.Database", "FacileSconti.Database", "{55555555-5555-5555-5555-555555555555}"
 	ProjectSection(SolutionItems) = preProject
-		000_create_asp_net_identity_tabkl.txt = 000_create_asp_net_identity_tabkl.txt
 		FacileSconti.Database\01_tables\001_create_schema.sql = FacileSconti.Database\01_tables\001_create_schema.sql
+		000_create_asp_net_identity_tabkl.sql = 000_create_asp_net_identity_tabkl.sql
 		FacileSconti.Database\05_views\001_dashboard_views.sql = FacileSconti.Database\05_views\001_dashboard_views.sql
 		FacileSconti.Database\02_constraints\001_foreign_keys.sql = FacileSconti.Database\02_constraints\001_foreign_keys.sql
 		FacileSconti.Database\03_indexes\001_indexes.sql = FacileSconti.Database\03_indexes\001_indexes.sql
