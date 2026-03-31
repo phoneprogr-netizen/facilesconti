@@ -1,12 +1,48 @@
+@model FacileSconti.Web.Areas.Customer.ViewModels.CreateCouponViewModel
 @{ ViewData["Title"] = "Crea coupon"; }
 <h1 class="h3 mb-3">Crea nuovo coupon</h1>
+
+@if (TempData["CouponSuccess"] is string successMessage)
+{
+    <div class="alert alert-success" role="alert">@successMessage</div>
+}
+
+@if (TempData["CouponError"] is string errorMessage)
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+
 <div class="card border-0 shadow-sm"><div class="card-body">
-    <form class="row g-3">
-        <div class="col-md-8"><label class="form-label">Titolo</label><input class="form-control" placeholder="Es. Menu degustazione -15%" /></div>
-        <div class="col-md-4"><label class="form-label">Categoria</label><select class="form-select"><option>Ristorazione</option><option>Beauty</option></select></div>
-        <div class="col-md-6"><label class="form-label">Valido dal</label><input class="form-control" type="date" /></div>
-        <div class="col-md-6"><label class="form-label">Valido fino</label><input class="form-control" type="date" /></div>
-        <div class="col-12"><label class="form-label">Immagine coupon</label><input class="form-control" type="file" /></div>
-        <div class="col-12"><button type="button" class="btn btn-primary">Pubblica coupon</button></div>
+    <form asp-action="CreateCoupon" method="post" class="row g-3">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="col-md-8">
+            <label asp-for="Title" class="form-label"></label>
+            <input asp-for="Title" class="form-control" placeholder="Es. Menu degustazione -15%" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-4">
+            <label asp-for="Category" class="form-label"></label>
+            <input asp-for="Category" class="form-control" placeholder="Es. Ristorazione" />
+            <span asp-validation-for="Category" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="ValidFrom" class="form-label">Valido dal</label>
+            <input asp-for="ValidFrom" class="form-control" type="date" />
+            <span asp-validation-for="ValidFrom" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="ValidTo" class="form-label">Valido fino</label>
+            <input asp-for="ValidTo" class="form-control" type="date" />
+            <span asp-validation-for="ValidTo" class="text-danger"></span>
+        </div>
+
+        <div class="col-12"><label class="form-label">Immagine coupon</label><input class="form-control" type="file" disabled /><small class="text-muted">Upload immagine non ancora attivo.</small></div>
+        <div class="col-12"><button type="submit" class="btn btn-primary">Salva coupon</button></div>
     </form>
 </div></div>
+

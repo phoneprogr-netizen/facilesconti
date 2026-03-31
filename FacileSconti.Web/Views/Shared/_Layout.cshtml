@@ -10,17 +10,17 @@
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
     <div class="container">
-        <a class="navbar-brand" asp-controller="Home" asp-action="Index">Facile Sconti</a>
+        <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Facile Sconti</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="mainNav">
             <div class="navbar-nav me-auto">
-                <a class="nav-link" asp-controller="Home" asp-action="Index">Home</a>
-                <a class="nav-link" asp-controller="Coupons" asp-action="Index">Coupon</a>
-                <a class="nav-link" asp-controller="StaticPage" asp-action="DiventaCliente">Diventa cliente</a>
-                <a class="nav-link" asp-controller="StaticPage" asp-action="ChiSiamo">Chi siamo</a>
-                <a class="nav-link" asp-controller="StaticPage" asp-action="Contatti">Contatti</a>
+                <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                <a class="nav-link" asp-area="" asp-controller="Coupons" asp-action="Index">Coupon</a>
+                <a class="nav-link" asp-area="" asp-controller="StaticPage" asp-action="DiventaCliente">Diventa cliente</a>
+                <a class="nav-link" asp-area="" asp-controller="StaticPage" asp-action="ChiSiamo">Chi siamo</a>
+                <a class="nav-link" asp-area="" asp-controller="StaticPage" asp-action="Contatti">Contatti</a>
             </div>
             <div class="navbar-nav align-items-lg-center gap-lg-2">
                 @if (User.Identity?.IsAuthenticated == true)
@@ -38,14 +38,14 @@
                         <a class="nav-link" asp-area="EndUser" asp-controller="Dashboard" asp-action="Index">Area Utente</a>
                     }
 
-                    <form method="post" asp-controller="Account" asp-action="Logout">
+                    <form method="post" asp-area="" asp-controller="Account" asp-action="Logout">
                         @Html.AntiForgeryToken()
                         <button type="submit" class="btn btn-outline-light btn-sm">Esci</button>
                     </form>
                 }
                 else
                 {
-                    <a class="btn btn-primary btn-sm" asp-controller="Account" asp-action="Login">Login</a>
+                    <a class="btn btn-primary btn-sm" asp-area="" asp-controller="Account" asp-action="Login">Login</a>
                 }
             </div>
         </div>
@@ -56,8 +56,8 @@
     <div class="container small d-flex flex-column flex-md-row justify-content-between gap-2">
         <span>© @DateTime.UtcNow.Year Facile Sconti</span>
         <div class="d-flex gap-3">
-            <a class="text-muted" asp-controller="StaticPage" asp-action="Privacy">Privacy</a>
-            <a class="text-muted" asp-controller="StaticPage" asp-action="Cookie">Cookie</a>
+            <a class="text-muted" asp-area="" asp-controller="StaticPage" asp-action="Privacy">Privacy</a>
+            <a class="text-muted" asp-area="" asp-controller="StaticPage" asp-action="Cookie">Cookie</a>
         </div>
     </div>
 </footer>
