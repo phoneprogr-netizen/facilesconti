@@ -142,6 +142,35 @@ body {
   background: linear-gradient(135deg, rgba(34, 34, 34, .95), rgba(0, 116, 217, .9));
 }
 
+.customer-hero {
+  background: linear-gradient(125deg, rgba(0, 116, 217, .98), rgba(60, 179, 113, .9));
+}
+
+.hero-highlight {
+  background: rgba(255, 255, 255, .16);
+  border: 1px solid rgba(255, 255, 255, .35);
+  border-radius: .9rem;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
+}
+
+.legal-page {
+  max-width: 980px;
+}
+
+.legal-hero {
+  background: linear-gradient(135deg, rgba(34, 34, 34, .95), rgba(0, 116, 217, .9));
+}
+
+.legal-card {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 1rem;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 6px 20px rgba(34, 34, 34, .05);
+}
+
 .info-panel,
 .company-card,
 .values-panel {
