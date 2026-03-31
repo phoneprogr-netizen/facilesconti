@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using FacileSconti.Domain.Enums;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace FacileSconti.Web.Areas.Admin.ViewModels;
@@ -33,6 +34,11 @@ public class AdminCustomerFormViewModel
     public string Province { get; set; } = string.Empty;
 
     public string? Description { get; set; }
+
+    [Display(Name = "Logo cliente")]
+    public IFormFile? LogoFile { get; set; }
+
+    public string? ExistingLogoPath { get; set; }
 
     [Display(Name = "Utente proprietario")]
     public string? OwnerUserId { get; set; }
@@ -79,7 +85,7 @@ public class AdminContractFormViewModel
     public List<SelectListItem> AvailablePlans { get; set; } = [];
 }
 
-public class AdminCouponFormViewModel
+public class AdminCouponFormViewModel : IValidatableObject
 {
     public int? Id { get; set; }
 
@@ -115,8 +121,35 @@ public class AdminCouponFormViewModel
     public bool IsFeatured { get; set; }
     public bool IsBoostedInHome { get; set; }
 
+    [Display(Name = "Immagini coupon (1-5)")]
+    public List<IFormFile> ImageFiles { get; set; } = [];
+
+    public List<AdminCouponImageItemViewModel> ExistingImages { get; set; } = [];
+
+    public List<int> RemoveImageIds { get; set; } = [];
+
     public List<SelectListItem> AvailableCustomers { get; set; } = [];
     public List<SelectListItem> AvailableCategories { get; set; } = [];
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        var existingCount = ExistingImages.Count(x => !RemoveImageIds.Contains(x.Id));
+        var newCount = ImageFiles.Count;
+        var total = existingCount + newCount;
+
+        if (total < 1)
+            yield return new ValidationResult("Inserisci almeno un'immagine per il coupon.", [nameof(ImageFiles)]);
+
+        if (total > 5)
+            yield return new ValidationResult("È possibile caricare al massimo 5 immagini per coupon.", [nameof(ImageFiles)]);
+    }
+}
+
+public class AdminCouponImageItemViewModel
+{
+    public int Id { get; set; }
+    public string FilePath { get; set; } = string.Empty;
+    public bool IsPrimary { get; set; }
 }
 
 public class AdminStatisticsViewModel
