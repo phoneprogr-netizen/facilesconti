@@ -69,7 +69,7 @@ public class CouponManagementController : Controller
             .OrderByDescending(x => x.EndDate)
             .Select(x => new CustomerContractViewModel
             {
-                BusinessName = x.CustomerBusiness.BusinessName,
+                BusinessName = x.CustomerBusiness.Name,
                 PlanName = x.SubscriptionPlan.Name,
                 StartDate = x.StartDate,
                 EndDate = x.EndDate,
