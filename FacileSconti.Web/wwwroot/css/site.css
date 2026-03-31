@@ -40,6 +40,10 @@
   object-fit: cover;
 }
 
+.coupon-detail-card .carousel-indicators [data-bs-target] {
+  background-color: rgba(255, 255, 255, 0.85);
+}
+
 .business-logo {
   width: 64px;
   height: 64px;

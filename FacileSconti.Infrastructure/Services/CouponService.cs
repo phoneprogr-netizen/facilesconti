@@ -83,19 +83,28 @@ public class CouponService : ICouponService
         return ServiceResult<string>.Ok(_qrCodeService.GenerateSvgDataUri(token), uniqueCode);
     }
 
-    private static CouponCardDto ToCouponCardDto(Domain.Entities.Coupon c) => new()
+    private static CouponCardDto ToCouponCardDto(Domain.Entities.Coupon c)
     {
-        Id = c.Id,
-        Title = c.Title,
-        Slug = c.Slug,
-        CategoryName = c.CouponCategory.Name,
-        BusinessName = c.CustomerBusiness.Name,
-        BusinessLogoPath = c.CustomerBusiness.LogoPath,
-        BusinessCity = c.CustomerBusiness.City,
-        ImagePath = c.Images.Where(i => i.IsPrimary).Select(i => i.FilePath).FirstOrDefault()
-            ?? c.Images.Select(i => i.FilePath).FirstOrDefault(),
-        ValidTo = c.ValidTo,
-        DownloadsCount = c.Downloads.Count,
-        IsBoostedInHome = c.IsBoostedInHome
-    };
+        var orderedImagePaths = c.Images
+            .OrderByDescending(i => i.IsPrimary)
+            .ThenBy(i => i.Id)
+            .Select(i => i.FilePath)
+            .ToList();
+
+        return new CouponCardDto
+        {
+            Id = c.Id,
+            Title = c.Title,
+            Slug = c.Slug,
+            CategoryName = c.CouponCategory.Name,
+            BusinessName = c.CustomerBusiness.Name,
+            BusinessLogoPath = c.CustomerBusiness.LogoPath,
+            BusinessCity = c.CustomerBusiness.City,
+            ImagePath = orderedImagePaths.FirstOrDefault(),
+            ImagePaths = orderedImagePaths,
+            ValidTo = c.ValidTo,
+            DownloadsCount = c.Downloads.Count,
+            IsBoostedInHome = c.IsBoostedInHome
+        };
+    }
 }
