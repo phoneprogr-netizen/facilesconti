@@ -1,5 +1,6 @@
 using FacileSconti.Infrastructure;
 using FacileSconti.Infrastructure.Identity;
+using FacileSconti.Web.Options;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +10,8 @@ builder.Host.UseSerilog();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpClient();
+builder.Services.Configure<PayPalOptions>(builder.Configuration.GetSection(PayPalOptions.SectionName));
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";

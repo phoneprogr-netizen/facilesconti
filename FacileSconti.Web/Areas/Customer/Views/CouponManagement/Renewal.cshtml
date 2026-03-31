@@ -1,5 +1,11 @@
 @model FacileSconti.Web.Areas.Customer.ViewModels.CustomerRenewalViewModel
-@{ ViewData["Title"] = "Rinnovo"; }
+@{
+    ViewData["Title"] = "Rinnovo";
+    var payPalEnabled = ViewData["PayPalEnabled"] as bool? == true;
+    var payPalClientId = ViewData["PayPalClientId"]?.ToString() ?? string.Empty;
+    var payPalCurrencyCode = ViewData["PayPalCurrencyCode"]?.ToString() ?? "EUR";
+    var payPalEnvironment = ViewData["PayPalEnvironment"]?.ToString() ?? "sandbox";
+}
 <h1 class="h3 mb-3">Rinnova il piano</h1>
 
 @if (TempData["RenewalWarning"] is string renewalWarning)
@@ -13,7 +19,7 @@
 }
 else
 {
-    <form asp-action="Renewal" method="post">
+    <form asp-action="Renewal" method="post" id="renewalForm">
         @Html.AntiForgeryToken()
         <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
@@ -78,6 +84,83 @@ else
         </div>
         <span asp-validation-for="Input.PaymentMethodCode" class="text-danger d-block mb-3"></span>
 
-        <button type="submit" class="btn btn-primary">Procedi al pagamento</button>
+        <button type="submit" class="btn btn-primary" id="standardCheckoutButton">Procedi al pagamento</button>
+        <div class="mt-3 @(payPalEnabled ? string.Empty : "d-none")" id="paypalCheckoutContainer">
+            <div id="paypal-button-container"></div>
+            <p class="small text-muted mb-0">Ambiente PayPal attivo: <strong>@payPalEnvironment</strong>.</p>
+        </div>
     </form>
+}
+
+@if (payPalEnabled && !string.IsNullOrWhiteSpace(payPalClientId))
+{
+    <script src="https://www.paypal.com/sdk/js?client-id=@payPalClientId&currency=@payPalCurrencyCode&intent=capture"></script>
+    <script>
+        (() => {
+            const paymentInputs = document.querySelectorAll('input[name="Input.PaymentMethodCode"]');
+            const planInput = () => document.querySelector('input[name="Input.SubscriptionPlanId"]:checked');
+            const paypalContainer = document.getElementById('paypalCheckoutContainer');
+            const standardButton = document.getElementById('standardCheckoutButton');
+            const antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+            const toggleCheckoutMode = () => {
+                const selectedMethod = document.querySelector('input[name="Input.PaymentMethodCode"]:checked')?.value;
+                const isPayPal = selectedMethod === 'paypal';
+                paypalContainer?.classList.toggle('d-none', !isPayPal);
+                standardButton?.classList.toggle('d-none', isPayPal);
+            };
+
+            paymentInputs.forEach(input => input.addEventListener('change', toggleCheckoutMode));
+            toggleCheckoutMode();
+
+            paypal.Buttons({
+                createOrder: async () => {
+                    const selectedPlan = planInput()?.value;
+                    if (!selectedPlan) throw new Error('Seleziona un piano prima di procedere.');
+
+                    const response = await fetch('@Url.Action("CreatePayPalOrder", "CouponManagement", new { area = "Customer" })', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': antiForgeryToken
+                        },
+                        body: JSON.stringify({
+                            subscriptionPlanId: Number(selectedPlan),
+                            paymentMethodCode: 'paypal'
+                        })
+                    });
+
+                    const payload = await response.json();
+                    if (!response.ok || !payload.id) {
+                        throw new Error(payload.message || 'Errore durante la creazione ordine PayPal.');
+                    }
+                    return payload.id;
+                },
+                onApprove: async (data) => {
+                    const response = await fetch('@Url.Action("CapturePayPalOrder", "CouponManagement", new { area = "Customer" })', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': antiForgeryToken
+                        },
+                        body: JSON.stringify({ orderId: data.orderID })
+                    });
+
+                    const payload = await response.json();
+                    if (!response.ok || !payload.success) {
+                        alert(payload.message || 'Pagamento acquisito ma conferma locale fallita.');
+                        return;
+                    }
+
+                    if (payload.redirectUrl) {
+                        window.location.href = payload.redirectUrl;
+                    }
+                },
+                onError: (err) => {
+                    console.error('PayPal error', err);
+                    alert('Errore PayPal: controlla configurazione ambiente e credenziali.');
+                }
+            }).render('#paypal-button-container');
+        })();
+    </script>
 }
