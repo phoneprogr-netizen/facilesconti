@@ -624,7 +624,112 @@ public class ManagementController : Controller
         return View(payments);
     }
 
-    public IActionResult Plans() => View();
+    [HttpGet]
+    public async Task<IActionResult> Plans(int? id, CancellationToken cancellationToken)
+    {
+        var plans = await _db.SubscriptionPlans
+            .AsNoTracking()
+            .OrderBy(x => x.Name)
+            .ToListAsync(cancellationToken);
+
+        AdminPlanFormViewModel form;
+        if (id.HasValue)
+        {
+            var selectedPlan = plans.FirstOrDefault(x => x.Id == id.Value);
+            if (selectedPlan is null) return NotFound();
+
+            form = new AdminPlanFormViewModel
+            {
+                Id = selectedPlan.Id,
+                Name = selectedPlan.Name,
+                Code = selectedPlan.Code,
+                BasePrice = selectedPlan.BasePrice,
+                MaxActiveCoupons = selectedPlan.MaxActiveCoupons,
+                MaxDownloadsPerCoupon = selectedPlan.MaxDownloadsPerCoupon,
+                UnlimitedCoupons = selectedPlan.UnlimitedCoupons,
+                UnlimitedDownloads = selectedPlan.UnlimitedDownloads,
+                AllowsBoost = selectedPlan.AllowsBoost,
+                IsActive = selectedPlan.IsActive,
+                SelectableUntil = selectedPlan.SelectableUntil
+            };
+        }
+        else
+        {
+            form = new AdminPlanFormViewModel();
+        }
+
+        var vm = new AdminPlansViewModel
+        {
+            Plans = plans,
+            Form = form
+        };
+        return View(vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SavePlan(AdminPlansViewModel model, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+        {
+            model.Plans = await _db.SubscriptionPlans
+                .AsNoTracking()
+                .OrderBy(x => x.Name)
+                .ToListAsync(cancellationToken);
+            return View("Plans", model);
+        }
+
+        var codeInUse = await _db.SubscriptionPlans
+            .AnyAsync(x => x.Code == model.Form.Code && x.Id != model.Form.Id, cancellationToken);
+        if (codeInUse)
+        {
+            ModelState.AddModelError("Form.Code", "Codice piano già utilizzato.");
+            model.Plans = await _db.SubscriptionPlans
+                .AsNoTracking()
+                .OrderBy(x => x.Name)
+                .ToListAsync(cancellationToken);
+            return View("Plans", model);
+        }
+
+        if (model.Form.Id.HasValue)
+        {
+            var entity = await _db.SubscriptionPlans.FindAsync([model.Form.Id.Value], cancellationToken);
+            if (entity is null) return NotFound();
+
+            entity.Name = model.Form.Name;
+            entity.Code = model.Form.Code;
+            entity.BasePrice = model.Form.BasePrice;
+            entity.MaxActiveCoupons = model.Form.MaxActiveCoupons;
+            entity.MaxDownloadsPerCoupon = model.Form.MaxDownloadsPerCoupon;
+            entity.UnlimitedCoupons = model.Form.UnlimitedCoupons;
+            entity.UnlimitedDownloads = model.Form.UnlimitedDownloads;
+            entity.AllowsBoost = model.Form.AllowsBoost;
+            entity.IsActive = model.Form.IsActive;
+            entity.SelectableUntil = model.Form.SelectableUntil;
+        }
+        else
+        {
+            var entity = new SubscriptionPlan
+            {
+                Name = model.Form.Name,
+                Code = model.Form.Code,
+                BasePrice = model.Form.BasePrice,
+                MaxActiveCoupons = model.Form.MaxActiveCoupons,
+                MaxDownloadsPerCoupon = model.Form.MaxDownloadsPerCoupon,
+                UnlimitedCoupons = model.Form.UnlimitedCoupons,
+                UnlimitedDownloads = model.Form.UnlimitedDownloads,
+                AllowsBoost = model.Form.AllowsBoost,
+                IsActive = model.Form.IsActive,
+                SelectableUntil = model.Form.SelectableUntil
+            };
+
+            _db.SubscriptionPlans.Add(entity);
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+        TempData["Success"] = "Piano salvato correttamente.";
+        return RedirectToAction(nameof(Plans));
+    }
     public IActionResult Categories() => View();
     public IActionResult BusinessRequests() => View();
     public IActionResult Cms() => View();
@@ -661,8 +766,10 @@ public class ManagementController : Controller
             .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
             .ToListAsync(cancellationToken);
 
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         model.AvailablePlans = await _db.SubscriptionPlans
             .AsNoTracking()
+            .Where(x => x.IsActive && !x.IsDeleted && (x.SelectableUntil == null || x.SelectableUntil >= today))
             .OrderBy(x => x.Name)
             .Select(x => new SelectListItem($"{x.Name} ({x.BasePrice:0.00}€)", x.Id.ToString()))
             .ToListAsync(cancellationToken);

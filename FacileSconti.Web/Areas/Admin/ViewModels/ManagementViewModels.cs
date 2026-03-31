@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using FacileSconti.Domain.Entities;
 using FacileSconti.Domain.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -175,4 +176,38 @@ public class CustomerStatsItem
     public int Coupons { get; set; }
     public int ActiveCoupons { get; set; }
     public decimal TotalPaid { get; set; }
+}
+
+public class AdminPlansViewModel
+{
+    public List<SubscriptionPlan> Plans { get; set; } = [];
+    public AdminPlanFormViewModel Form { get; set; } = new();
+}
+
+public class AdminPlanFormViewModel
+{
+    public int? Id { get; set; }
+
+    [Required, StringLength(120)]
+    public string Name { get; set; } = string.Empty;
+
+    [Required, StringLength(30)]
+    public string Code { get; set; } = string.Empty;
+
+    [Range(0, 999999)]
+    public decimal BasePrice { get; set; }
+
+    [Range(0, int.MaxValue)]
+    public int MaxActiveCoupons { get; set; }
+
+    [Range(0, int.MaxValue)]
+    public int? MaxDownloadsPerCoupon { get; set; }
+
+    public bool UnlimitedCoupons { get; set; }
+    public bool UnlimitedDownloads { get; set; }
+    public bool AllowsBoost { get; set; }
+    public bool IsActive { get; set; } = true;
+
+    [Display(Name = "Selezionabile fino al")]
+    public DateOnly? SelectableUntil { get; set; }
 }
