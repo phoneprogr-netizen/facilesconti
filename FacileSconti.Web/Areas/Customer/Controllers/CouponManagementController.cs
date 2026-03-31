@@ -284,7 +284,28 @@ public class CouponManagementController : Controller
         return Ok(new { success = true, redirectUrl = Url.Action(nameof(Contract)) });
     }
 
-    public IActionResult Coupons() => View();
+    [HttpGet]
+    public async Task<IActionResult> Coupons(CancellationToken cancellationToken)
+    {
+        var ownerUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+
+        var items = await _db.Coupons
+            .AsNoTracking()
+            .Where(x => x.CustomerBusiness.OwnerUserId == ownerUserId && !x.IsDeleted)
+            .Include(x => x.CouponCategory)
+            .OrderByDescending(x => x.ValidTo)
+            .Select(x => new CustomerCouponListItemViewModel
+            {
+                Id = x.Id,
+                Title = x.Title,
+                Category = x.CouponCategory.Name,
+                ValidTo = x.ValidTo,
+                Status = x.Status
+            })
+            .ToListAsync(cancellationToken);
+
+        return View(items);
+    }
 
     [HttpGet]
     public IActionResult CreateCoupon() => View(new CreateCouponViewModel());
@@ -309,7 +330,55 @@ public class CouponManagementController : Controller
         return RedirectToAction(nameof(CreateCoupon));
     }
 
-    public IActionResult EditCoupon(int id) => View();
+    [HttpGet]
+    public async Task<IActionResult> EditCoupon(int id, CancellationToken cancellationToken)
+    {
+        var ownerUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+
+        var model = await _db.Coupons
+            .AsNoTracking()
+            .Where(x => x.Id == id && x.CustomerBusiness.OwnerUserId == ownerUserId && !x.IsDeleted)
+            .Select(x => new CustomerEditCouponViewModel
+            {
+                Id = x.Id,
+                Title = x.Title,
+                ShortDescription = x.ShortDescription,
+                FullDescription = x.FullDescription,
+                Status = x.Status
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (model is null)
+            return NotFound("Coupon non trovato.");
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditCoupon(CustomerEditCouponViewModel model, CancellationToken cancellationToken)
+    {
+        var ownerUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+
+        var coupon = await _db.Coupons
+            .FirstOrDefaultAsync(x => x.Id == model.Id && x.CustomerBusiness.OwnerUserId == ownerUserId && !x.IsDeleted, cancellationToken);
+
+        if (coupon is null)
+            return NotFound("Coupon non trovato.");
+
+        if (!ModelState.IsValid)
+            return View(model);
+
+        coupon.Title = model.Title.Trim();
+        coupon.ShortDescription = model.ShortDescription.Trim();
+        coupon.FullDescription = model.FullDescription.Trim();
+        coupon.Status = model.Status;
+
+        await _db.SaveChangesAsync(cancellationToken);
+        TempData["CouponSuccess"] = $"Coupon '{coupon.Title}' aggiornato correttamente.";
+
+        return RedirectToAction(nameof(Coupons));
+    }
     [HttpGet]
     public async Task<IActionResult> Statistics(CancellationToken cancellationToken)
     {

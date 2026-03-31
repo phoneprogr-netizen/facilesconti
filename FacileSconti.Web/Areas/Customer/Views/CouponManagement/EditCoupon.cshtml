@@ -1,10 +1,40 @@
+@model FacileSconti.Web.Areas.Customer.ViewModels.CustomerEditCouponViewModel
 @{ ViewData["Title"] = "Modifica coupon"; }
 <h1 class="h3 mb-3">Modifica coupon</h1>
-<div class="card border-0 shadow-sm"><div class="card-body">
-    <form class="row g-3">
-        <div class="col-md-8"><label class="form-label">Titolo</label><input class="form-control" value="Sconto pranzo 20%" /></div>
-        <div class="col-md-4"><label class="form-label">Stato</label><select class="form-select"><option>Attivo</option><option>Sospeso</option></select></div>
-        <div class="col-12"><label class="form-label">Descrizione</label><textarea class="form-control" rows="4">Valido dal lunedì al venerdì con prenotazione.</textarea></div>
-        <div class="col-12 d-flex gap-2"><button type="button" class="btn btn-primary">Salva</button><button type="button" class="btn btn-outline-danger">Disattiva</button></div>
-    </form>
-</div></div>
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form method="post" asp-action="EditCoupon" class="row g-3">
+            <input asp-for="Id" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="col-md-8">
+                <label asp-for="Title" class="form-label"></label>
+                <input asp-for="Title" class="form-control" />
+                <span asp-validation-for="Title" class="text-danger"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Status" class="form-label"></label>
+                <select asp-for="Status" asp-items="Html.GetEnumSelectList<FacileSconti.Domain.Enums.CouponStatus>()" class="form-select"></select>
+                <span asp-validation-for="Status" class="text-danger"></span>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="ShortDescription" class="form-label"></label>
+                <input asp-for="ShortDescription" class="form-control" />
+                <span asp-validation-for="ShortDescription" class="text-danger"></span>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="FullDescription" class="form-label"></label>
+                <textarea asp-for="FullDescription" class="form-control" rows="5"></textarea>
+                <span asp-validation-for="FullDescription" class="text-danger"></span>
+            </div>
+
+            <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Salva modifiche</button>
+                <a asp-action="Coupons" class="btn btn-outline-secondary">Annulla</a>
+            </div>
+        </form>
+    </div>
+</div>
