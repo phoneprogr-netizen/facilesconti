@@ -16,6 +16,7 @@
 <table class="table table-striped table-hover align-middle">
     <thead>
     <tr>
+        <th>Logo</th>
         <th>Ragione sociale</th>
         <th>Email</th>
         <th>Città</th>
@@ -27,6 +28,16 @@
     @foreach (var item in Model)
     {
         <tr>
+            <td>
+                @if (!string.IsNullOrWhiteSpace(item.LogoPath))
+                {
+                    <img src="@item.LogoPath" alt="Logo @item.Name" class="img-thumbnail" style="width: 56px; height: 56px; object-fit: cover;" />
+                }
+                else
+                {
+                    <span class="text-muted small">N/D</span>
+                }
+            </td>
             <td>@item.Name</td>
             <td>@item.Email</td>
             <td>@item.City (@item.Province)</td>

@@ -14,8 +14,13 @@ namespace FacileSconti.Web.Areas.Admin.Controllers;
 public class ManagementController : Controller
 {
     private readonly ApplicationDbContext _db;
+    private readonly IWebHostEnvironment _webHostEnvironment;
 
-    public ManagementController(ApplicationDbContext db) => _db = db;
+    public ManagementController(ApplicationDbContext db, IWebHostEnvironment webHostEnvironment)
+    {
+        _db = db;
+        _webHostEnvironment = webHostEnvironment;
+    }
 
     public async Task<IActionResult> Customers(CancellationToken cancellationToken)
     {
@@ -40,6 +45,7 @@ public class ManagementController : Controller
     public async Task<IActionResult> NewCustomer(AdminCustomerFormViewModel model, CancellationToken cancellationToken)
     {
         await PopulateOwnerUsersAsync(model, model.OwnerUserId, cancellationToken);
+        model.ExistingLogoPath = null;
         if (!ModelState.IsValid)
             return View("CustomerForm", model);
 
@@ -60,6 +66,7 @@ public class ManagementController : Controller
             City = model.City,
             Province = model.Province,
             Description = model.Description,
+            LogoPath = await SaveImageAsync(model.LogoFile, "customers", cancellationToken),
             OwnerUserId = model.OwnerUserId
         };
 
@@ -87,6 +94,7 @@ public class ManagementController : Controller
             City = entity.City,
             Province = entity.Province,
             Description = entity.Description,
+            ExistingLogoPath = entity.LogoPath,
             OwnerUserId = entity.OwnerUserId
         };
 
@@ -104,6 +112,7 @@ public class ManagementController : Controller
         if (entity is null) return NotFound();
 
         await PopulateOwnerUsersAsync(model, model.OwnerUserId ?? entity.OwnerUserId, cancellationToken);
+        model.ExistingLogoPath = entity.LogoPath;
         if (!ModelState.IsValid)
             return View("CustomerForm", model);
 
@@ -122,6 +131,8 @@ public class ManagementController : Controller
         entity.City = model.City;
         entity.Province = model.Province;
         entity.Description = model.Description;
+        if (model.LogoFile is not null)
+            entity.LogoPath = await SaveImageAsync(model.LogoFile, "customers", cancellationToken);
         entity.OwnerUserId = model.OwnerUserId;
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -289,6 +300,7 @@ public class ManagementController : Controller
     public async Task<IActionResult> NewCoupon(AdminCouponFormViewModel model, CancellationToken cancellationToken)
     {
         await PopulateCouponDependenciesAsync(model, cancellationToken);
+        model.ExistingImages = [];
         if (!ModelState.IsValid)
             return View("CouponForm", model);
 
@@ -320,6 +332,27 @@ public class ManagementController : Controller
 
         _db.Coupons.Add(entity);
         await _db.SaveChangesAsync(cancellationToken);
+
+        if (model.ImageFiles.Count > 0)
+        {
+            var couponImages = new List<CouponImage>();
+            for (var i = 0; i < model.ImageFiles.Count; i++)
+            {
+                var filePath = await SaveImageAsync(model.ImageFiles[i], "coupons", cancellationToken);
+                if (string.IsNullOrWhiteSpace(filePath))
+                    continue;
+                couponImages.Add(new CouponImage
+                {
+                    CouponId = entity.Id,
+                    FilePath = filePath,
+                    IsPrimary = i == 0
+                });
+            }
+
+            _db.CouponImages.AddRange(couponImages);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+
         TempData["Success"] = "Coupon creato con successo.";
         return RedirectToAction(nameof(Coupons));
     }
@@ -327,7 +360,9 @@ public class ManagementController : Controller
     [HttpGet]
     public async Task<IActionResult> EditCoupon(int id, CancellationToken cancellationToken)
     {
-        var entity = await _db.Coupons.FindAsync([id], cancellationToken);
+        var entity = await _db.Coupons
+            .Include(x => x.Images)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (entity is null) return NotFound();
 
         var vm = new AdminCouponFormViewModel
@@ -347,7 +382,17 @@ public class ManagementController : Controller
             ValidTo = entity.ValidTo,
             MaxDownloads = entity.MaxDownloads,
             IsFeatured = entity.IsFeatured,
-            IsBoostedInHome = entity.IsBoostedInHome
+            IsBoostedInHome = entity.IsBoostedInHome,
+            ExistingImages = entity.Images
+                .OrderByDescending(x => x.IsPrimary)
+                .ThenBy(x => x.Id)
+                .Select(x => new AdminCouponImageItemViewModel
+                {
+                    Id = x.Id,
+                    FilePath = x.FilePath,
+                    IsPrimary = x.IsPrimary
+                })
+                .ToList()
         };
 
         await PopulateCouponDependenciesAsync(vm, cancellationToken);
@@ -360,8 +405,21 @@ public class ManagementController : Controller
     {
         if (model.Id is null) return NotFound();
 
-        var entity = await _db.Coupons.FindAsync([model.Id.Value], cancellationToken);
+        var entity = await _db.Coupons
+            .Include(x => x.Images)
+            .FirstOrDefaultAsync(x => x.Id == model.Id.Value, cancellationToken);
         if (entity is null) return NotFound();
+
+        model.ExistingImages = entity.Images
+            .OrderByDescending(x => x.IsPrimary)
+            .ThenBy(x => x.Id)
+            .Select(x => new AdminCouponImageItemViewModel
+            {
+                Id = x.Id,
+                FilePath = x.FilePath,
+                IsPrimary = x.IsPrimary
+            })
+            .ToList();
 
         await PopulateCouponDependenciesAsync(model, cancellationToken);
         if (!ModelState.IsValid)
@@ -390,6 +448,35 @@ public class ManagementController : Controller
         entity.IsFeatured = model.IsFeatured;
         entity.IsBoostedInHome = model.IsBoostedInHome;
 
+        var removeIds = model.RemoveImageIds.Distinct().ToHashSet();
+        if (removeIds.Count > 0)
+        {
+            var imagesToRemove = entity.Images.Where(x => removeIds.Contains(x.Id)).ToList();
+            _db.CouponImages.RemoveRange(imagesToRemove);
+        }
+
+        if (model.ImageFiles.Count > 0)
+        {
+            foreach (var imageFile in model.ImageFiles)
+            {
+                var filePath = await SaveImageAsync(imageFile, "coupons", cancellationToken);
+                if (string.IsNullOrWhiteSpace(filePath))
+                    continue;
+                entity.Images.Add(new CouponImage
+                {
+                    FilePath = filePath,
+                    IsPrimary = false
+                });
+            }
+        }
+
+        if (entity.Images.All(x => !x.IsPrimary))
+        {
+            var firstImage = entity.Images.FirstOrDefault();
+            if (firstImage is not null)
+                firstImage.IsPrimary = true;
+        }
+
         await _db.SaveChangesAsync(cancellationToken);
         TempData["Success"] = "Coupon aggiornato con successo.";
         return RedirectToAction(nameof(Coupons));
@@ -399,8 +486,13 @@ public class ManagementController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteCoupon(int id, CancellationToken cancellationToken)
     {
-        var entity = await _db.Coupons.FindAsync([id], cancellationToken);
+        var entity = await _db.Coupons
+            .Include(x => x.Images)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (entity is null) return NotFound();
+
+        if (entity.Images.Count > 0)
+            _db.CouponImages.RemoveRange(entity.Images);
 
         _db.Coupons.Remove(entity);
         await _db.SaveChangesAsync(cancellationToken);
@@ -508,5 +600,22 @@ public class ManagementController : Controller
             .OrderBy(x => x.Name)
             .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
             .ToListAsync(cancellationToken);
+    }
+
+    private async Task<string?> SaveImageAsync(IFormFile? file, string folderName, CancellationToken cancellationToken)
+    {
+        if (file is null || file.Length == 0)
+            return null;
+
+        var extension = Path.GetExtension(file.FileName);
+        var safeFileName = $"{Guid.NewGuid():N}{extension}";
+        var relativePath = Path.Combine("uploads", folderName, safeFileName).Replace("\\", "/");
+        var absoluteDirectory = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", folderName);
+        Directory.CreateDirectory(absoluteDirectory);
+        var absolutePath = Path.Combine(absoluteDirectory, safeFileName);
+
+        await using var stream = new FileStream(absolutePath, FileMode.Create);
+        await file.CopyToAsync(stream, cancellationToken);
+        return "/" + relativePath;
     }
 }

@@ -5,7 +5,7 @@
 
 <h1 class="h3 mb-3">@ViewData["Title"]</h1>
 
-<form method="post" asp-action="@(Model.Id.HasValue ? "EditCustomer" : "NewCustomer")" class="row g-3">
+<form method="post" enctype="multipart/form-data" asp-action="@(Model.Id.HasValue ? "EditCustomer" : "NewCustomer")" class="row g-3">
     @Html.AntiForgeryToken()
     @if (Model.Id.HasValue)
     {
@@ -62,6 +62,18 @@
         <label asp-for="Description" class="form-label"></label>
         <textarea asp-for="Description" class="form-control" rows="3"></textarea>
     </div>
+    <div class="col-md-6">
+        <label asp-for="LogoFile" class="form-label"></label>
+        <input asp-for="LogoFile" type="file" class="form-control" accept="image/*" />
+        <div class="form-text">Supportato upload locale ora; in futuro potrai salvare URL blob Azure.</div>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(Model.ExistingLogoPath))
+    {
+        <div class="col-md-6">
+            <label class="form-label d-block">Logo attuale</label>
+            <img src="@Model.ExistingLogoPath" alt="Logo cliente" class="img-thumbnail" style="max-height: 100px;" />
+        </div>
+    }
     <div class="col-12 d-flex gap-2">
         <button class="btn btn-primary" type="submit">Salva</button>
         <a class="btn btn-outline-secondary" asp-action="Customers">Annulla</a>

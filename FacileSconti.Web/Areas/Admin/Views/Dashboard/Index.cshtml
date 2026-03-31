@@ -3,15 +3,16 @@
     ViewData["Title"] = "Dashboard Admin";
 }
 
-<h1>Dashboard Admin</h1>
-<ul>
-<li>Clienti attivi: @Model.ActiveCustomers</li>
-<li>Contratti attivi: @Model.ActiveContracts</li>
-<li>Contratti scaduti: @Model.ExpiredContracts</li>
-<li>Coupon attivi: @Model.ActiveCoupons</li>
-<li>Coupon scaduti: @Model.ExpiredCoupons</li>
-<li>Download totali: @Model.TotalDownloads</li>
-</ul>
+<h1 class="h3 mb-3">Dashboard Admin</h1>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="border rounded p-3"><div class="text-secondary small">Clienti attivi</div><strong>@Model.ActiveCustomers</strong></div></div>
+    <div class="col-md-4"><div class="border rounded p-3"><div class="text-secondary small">Contratti attivi</div><strong>@Model.ActiveContracts</strong></div></div>
+    <div class="col-md-4"><div class="border rounded p-3"><div class="text-secondary small">Contratti scaduti</div><strong>@Model.ExpiredContracts</strong></div></div>
+    <div class="col-md-4"><div class="border rounded p-3"><div class="text-secondary small">Coupon attivi</div><strong>@Model.ActiveCoupons</strong></div></div>
+    <div class="col-md-4"><div class="border rounded p-3"><div class="text-secondary small">Coupon scaduti</div><strong>@Model.ExpiredCoupons</strong></div></div>
+    <div class="col-md-4"><div class="border rounded p-3"><div class="text-secondary small">Download totali</div><strong>@Model.TotalDownloads</strong></div></div>
+</div>
 
 <div class="d-flex flex-wrap gap-2 mt-4">
     <a class="btn btn-outline-primary" asp-area="Admin" asp-controller="Management" asp-action="Customers">Clienti</a>
