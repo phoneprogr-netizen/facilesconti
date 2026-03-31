@@ -1,5 +1,11 @@
 @{ ViewData["Title"] = "Contratto"; }
 <h1 class="h3 mb-3">Contratto attivo</h1>
+
+@if (TempData["RenewalSuccess"] is string renewalSuccess)
+{
+    <div class="alert alert-success">@renewalSuccess</div>
+}
+
 <div class="card border-0 shadow-sm">
     <div class="card-body">
         <ul class="list-group list-group-flush">
