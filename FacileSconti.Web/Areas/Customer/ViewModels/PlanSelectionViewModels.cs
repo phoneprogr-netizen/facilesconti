@@ -19,6 +19,25 @@ public class PlanSelectionItemViewModel
 public class CustomerRenewalViewModel
 {
     public List<PlanSelectionItemViewModel> AvailablePlans { get; set; } = [];
+    public RenewalPaymentInputViewModel Input { get; set; } = new();
+    public List<PaymentMethodOptionViewModel> PaymentMethods { get; set; } = [];
+}
+
+public class RenewalPaymentInputViewModel
+{
+    [Required(ErrorMessage = "Seleziona un piano.")]
+    public int? SubscriptionPlanId { get; set; }
+
+    [Required(ErrorMessage = "Seleziona un metodo di pagamento.")]
+    public string PaymentMethodCode { get; set; } = string.Empty;
+}
+
+public class PaymentMethodOptionViewModel
+{
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public bool IsDefault { get; set; }
 }
 
 public class CustomerBoostPageViewModel

@@ -14,6 +14,28 @@ namespace FacileSconti.Web.Areas.Customer.Controllers;
 public class CouponManagementController : Controller
 {
     private readonly ApplicationDbContext _db;
+    private static readonly List<PaymentMethodOptionViewModel> RenewalPaymentMethods =
+    [
+        new()
+        {
+            Code = "paypal",
+            Name = "PayPal",
+            Description = "Pagamento immediato online (attivo ora).",
+            IsDefault = true
+        },
+        new()
+        {
+            Code = "bank_transfer",
+            Name = "Bonifico bancario",
+            Description = "Disponibile a breve: invio coordinate e conferma manuale."
+        },
+        new()
+        {
+            Code = "paymart",
+            Name = "Paymart",
+            Description = "Disponibile a breve: integrazione gateway Paymart."
+        }
+    ];
 
     public CouponManagementController(ApplicationDbContext db)
     {
@@ -26,29 +48,83 @@ public class CouponManagementController : Controller
     public async Task<IActionResult> Renewal(CancellationToken cancellationToken)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var availablePlans = await _db.SubscriptionPlans
+            .AsNoTracking()
+            .Where(x => x.IsActive && !x.IsDeleted && (x.SelectableUntil == null || x.SelectableUntil >= today))
+            .OrderBy(x => x.BasePrice)
+            .Select(x => new PlanSelectionItemViewModel
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Code = x.Code,
+                BasePrice = x.BasePrice,
+                MaxActiveCoupons = x.MaxActiveCoupons,
+                MaxDownloadsPerCoupon = x.MaxDownloadsPerCoupon,
+                UnlimitedCoupons = x.UnlimitedCoupons,
+                UnlimitedDownloads = x.UnlimitedDownloads,
+                AllowsBoost = x.AllowsBoost,
+                SelectableUntil = x.SelectableUntil
+            })
+            .ToListAsync(cancellationToken);
+
         var vm = new CustomerRenewalViewModel
         {
-            AvailablePlans = await _db.SubscriptionPlans
-                .AsNoTracking()
-                .Where(x => x.IsActive && !x.IsDeleted && (x.SelectableUntil == null || x.SelectableUntil >= today))
-                .OrderBy(x => x.BasePrice)
-                .Select(x => new PlanSelectionItemViewModel
-                {
-                    Id = x.Id,
-                    Name = x.Name,
-                    Code = x.Code,
-                    BasePrice = x.BasePrice,
-                    MaxActiveCoupons = x.MaxActiveCoupons,
-                    MaxDownloadsPerCoupon = x.MaxDownloadsPerCoupon,
-                    UnlimitedCoupons = x.UnlimitedCoupons,
-                    UnlimitedDownloads = x.UnlimitedDownloads,
-                    AllowsBoost = x.AllowsBoost,
-                    SelectableUntil = x.SelectableUntil
-                })
-                .ToListAsync(cancellationToken)
+            AvailablePlans = availablePlans,
+            PaymentMethods = RenewalPaymentMethods,
+            Input = new RenewalPaymentInputViewModel
+            {
+                SubscriptionPlanId = availablePlans.FirstOrDefault()?.Id,
+                PaymentMethodCode = RenewalPaymentMethods.First(x => x.IsDefault).Code
+            }
         };
 
         return View(vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Renewal(CustomerRenewalViewModel model, CancellationToken cancellationToken)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        model.AvailablePlans = await _db.SubscriptionPlans
+            .AsNoTracking()
+            .Where(x => x.IsActive && !x.IsDeleted && (x.SelectableUntil == null || x.SelectableUntil >= today))
+            .OrderBy(x => x.BasePrice)
+            .Select(x => new PlanSelectionItemViewModel
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Code = x.Code,
+                BasePrice = x.BasePrice,
+                MaxActiveCoupons = x.MaxActiveCoupons,
+                MaxDownloadsPerCoupon = x.MaxDownloadsPerCoupon,
+                UnlimitedCoupons = x.UnlimitedCoupons,
+                UnlimitedDownloads = x.UnlimitedDownloads,
+                AllowsBoost = x.AllowsBoost,
+                SelectableUntil = x.SelectableUntil
+            })
+            .ToListAsync(cancellationToken);
+        model.PaymentMethods = RenewalPaymentMethods;
+
+        var selectedPlan = model.AvailablePlans.FirstOrDefault(x => x.Id == model.Input.SubscriptionPlanId);
+        var selectedPaymentMethod = RenewalPaymentMethods.FirstOrDefault(x => x.Code == model.Input.PaymentMethodCode);
+
+        if (selectedPlan is null)
+            ModelState.AddModelError(nameof(model.Input.SubscriptionPlanId), "Piano non valido.");
+        if (selectedPaymentMethod is null)
+            ModelState.AddModelError(nameof(model.Input.PaymentMethodCode), "Metodo di pagamento non valido.");
+
+        if (!ModelState.IsValid)
+            return View(model);
+
+        if (selectedPaymentMethod!.Code != "paypal")
+        {
+            TempData["RenewalWarning"] = $"Il metodo {selectedPaymentMethod.Name} è previsto ma non ancora attivo. Usa PayPal per completare ora.";
+            return View(model);
+        }
+
+        TempData["RenewalSuccess"] = $"Richiesta di rinnovo inviata: piano {selectedPlan!.Name} con pagamento {selectedPaymentMethod.Name}.";
+        return RedirectToAction(nameof(Contract));
     }
 
     public IActionResult Coupons() => View();
