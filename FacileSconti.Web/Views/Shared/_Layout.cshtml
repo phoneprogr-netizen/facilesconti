@@ -18,7 +18,10 @@
             <div class="navbar-nav me-auto">
                 <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                 <a class="nav-link" asp-area="" asp-controller="Coupons" asp-action="Index">Coupon</a>
-                <a class="nav-link" asp-area="" asp-controller="StaticPage" asp-action="DiventaCliente">Diventa cliente</a>
+                @if (!User.IsInRole("Customer"))
+                {
+                    <a class="nav-link" asp-area="" asp-controller="StaticPage" asp-action="DiventaCliente">Diventa cliente</a>
+                }
                 <a class="nav-link" asp-area="" asp-controller="StaticPage" asp-action="ChiSiamo">Chi siamo</a>
                 <a class="nav-link" asp-area="" asp-controller="StaticPage" asp-action="Contatti">Contatti</a>
             </div>
