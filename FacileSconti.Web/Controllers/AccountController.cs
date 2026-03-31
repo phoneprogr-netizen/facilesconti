@@ -1,3 +1,4 @@
+using FacileSconti.Application.Interfaces;
 using FacileSconti.Domain.Entities;
 using FacileSconti.Domain.Enums;
 using FacileSconti.Infrastructure.Data;
@@ -11,15 +12,18 @@ public class AccountController : Controller
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ApplicationDbContext _db;
+    private readonly IEmailService _emailService;
 
     public AccountController(
         SignInManager<ApplicationUser> signInManager,
         UserManager<ApplicationUser> userManager,
-        ApplicationDbContext db)
+        ApplicationDbContext db,
+        IEmailService emailService)
     {
         _signInManager = signInManager;
         _userManager = userManager;
         _db = db;
+        _emailService = emailService;
     }
 
     public IActionResult Login(string? returnUrl = null)
@@ -90,6 +94,7 @@ public class AccountController : Controller
         }
 
         await _userManager.AddToRoleAsync(user, "EndUser");
+        await _emailService.SendWelcomeEmailAsync(user.Email!, $"{user.FirstName} {user.LastName}", HttpContext.RequestAborted);
         await _signInManager.SignInAsync(user, false);
         return RedirectToAction("Index", "Dashboard", new { area = "EndUser" });
     }
@@ -133,6 +138,7 @@ public class AccountController : Controller
         }
 
         await _userManager.AddToRoleAsync(user, "Customer");
+        await _emailService.SendWelcomeEmailAsync(user.Email!, $"{user.FirstName} {user.LastName}", HttpContext.RequestAborted);
 
         _db.CustomerBusinesses.Add(new CustomerBusiness
         {

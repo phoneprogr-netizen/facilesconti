@@ -1,3 +1,4 @@
+using FacileSconti.Application.Interfaces;
 using FacileSconti.Domain.Entities;
 using FacileSconti.Domain.Enums;
 using FacileSconti.Infrastructure.Data;
@@ -17,15 +18,18 @@ public class ManagementController : Controller
     private readonly ApplicationDbContext _db;
     private readonly IWebHostEnvironment _webHostEnvironment;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IEmailService _emailService;
 
     public ManagementController(
         ApplicationDbContext db,
         IWebHostEnvironment webHostEnvironment,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        IEmailService emailService)
     {
         _db = db;
         _webHostEnvironment = webHostEnvironment;
         _userManager = userManager;
+        _emailService = emailService;
     }
 
     public async Task<IActionResult> Customers(CancellationToken cancellationToken)
@@ -87,6 +91,7 @@ public class ManagementController : Controller
                 }
 
                 await _userManager.AddToRoleAsync(generatedUser, "Customer");
+                await _emailService.SendWelcomeEmailAsync(generatedUser.Email!, $"{generatedUser.FirstName} {generatedUser.LastName}", cancellationToken);
                 ownerUserId = generatedUser.Id;
             }
         }
@@ -392,6 +397,21 @@ public class ManagementController : Controller
             await _db.SaveChangesAsync(cancellationToken);
         }
 
+        if (entity.Status == CouponStatus.Active)
+        {
+            var business = await _db.CustomerBusinesses.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == entity.CustomerBusinessId, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(business?.Email))
+            {
+                await _emailService.SendCouponPublishedEmailAsync(
+                    business.Email,
+                    business.Name,
+                    entity.Title,
+                    entity.ValidTo,
+                    cancellationToken);
+            }
+        }
+
         TempData["Success"] = "Coupon creato con successo.";
         return RedirectToAction(nameof(Coupons));
     }
@@ -480,6 +500,7 @@ public class ManagementController : Controller
         entity.OriginalPrice = model.OriginalPrice;
         entity.DiscountedPrice = model.DiscountedPrice;
         entity.CouponType = model.CouponType;
+        var previousStatus = entity.Status;
         entity.Status = model.Status;
         entity.ValidFrom = model.ValidFrom;
         entity.ValidTo = model.ValidTo;
@@ -517,6 +538,22 @@ public class ManagementController : Controller
         }
 
         await _db.SaveChangesAsync(cancellationToken);
+
+        if (previousStatus != CouponStatus.Active && entity.Status == CouponStatus.Active)
+        {
+            var business = await _db.CustomerBusinesses.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == entity.CustomerBusinessId, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(business?.Email))
+            {
+                await _emailService.SendCouponPublishedEmailAsync(
+                    business.Email,
+                    business.Name,
+                    entity.Title,
+                    entity.ValidTo,
+                    cancellationToken);
+            }
+        }
+
         TempData["Success"] = "Coupon aggiornato con successo.";
         return RedirectToAction(nameof(Coupons));
     }

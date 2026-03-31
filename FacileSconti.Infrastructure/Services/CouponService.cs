@@ -11,11 +11,13 @@ public class CouponService : ICouponService
 {
     private readonly ApplicationDbContext _db;
     private readonly IQrCodeService _qrCodeService;
+    private readonly IEmailService _emailService;
 
-    public CouponService(ApplicationDbContext db, IQrCodeService qrCodeService)
+    public CouponService(ApplicationDbContext db, IQrCodeService qrCodeService, IEmailService emailService)
     {
         _db = db;
         _qrCodeService = qrCodeService;
+        _emailService = emailService;
     }
 
     public async Task<IReadOnlyList<CouponCardDto>> GetPublicCouponsAsync(string? categorySlug, string? city, int page, int pageSize, CancellationToken cancellationToken = default)
@@ -80,6 +82,17 @@ public class CouponService : ICouponService
         });
 
         await _db.SaveChangesAsync(cancellationToken);
+        var endUser = await _db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == endUserId, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(endUser?.Email))
+        {
+            await _emailService.SendCouponDownloadedEmailAsync(
+                endUser.Email,
+                $"{endUser.FirstName} {endUser.LastName}".Trim(),
+                coupon.Title,
+                uniqueCode,
+                cancellationToken);
+        }
+
         return ServiceResult<string>.Ok(_qrCodeService.GenerateSvgDataUri(token), uniqueCode);
     }
 
