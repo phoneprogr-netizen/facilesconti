@@ -10,6 +10,7 @@ public class CouponCardDto
     public string? BusinessLogoPath { get; set; }
     public string? BusinessCity { get; set; }
     public string? ImagePath { get; set; }
+    public IReadOnlyList<string> ImagePaths { get; set; } = [];
     public DateOnly ValidTo { get; set; }
     public int DownloadsCount { get; set; }
     public bool IsBoostedInHome { get; set; }

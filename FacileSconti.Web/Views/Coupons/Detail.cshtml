@@ -6,7 +6,40 @@
 <div class="row g-4">
     <div class="col-lg-7">
         <div class="card shadow-sm border-0 coupon-detail-card">
-            @if (!string.IsNullOrWhiteSpace(Model.Coupon.ImagePath))
+            @if (Model.Coupon.ImagePaths.Count > 1)
+            {
+                var carouselId = $"couponImagesCarousel{Model.Coupon.Id}";
+                <div id="@carouselId" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-indicators">
+                        @for (var i = 0; i < Model.Coupon.ImagePaths.Count; i++)
+                        {
+                            <button type="button"
+                                    data-bs-target="#@carouselId"
+                                    data-bs-slide-to="@i"
+                                    class="@(i == 0 ? "active" : string.Empty)"
+                                    aria-current="@(i == 0 ? "true" : "false")"
+                                    aria-label="Slide @(i + 1)"></button>
+                        }
+                    </div>
+                    <div class="carousel-inner">
+                        @for (var i = 0; i < Model.Coupon.ImagePaths.Count; i++)
+                        {
+                            <div class="carousel-item @(i == 0 ? "active" : string.Empty)">
+                                <img src="@Model.Coupon.ImagePaths[i]" class="coupon-detail-image d-block w-100" alt="Immagine @(i + 1) coupon @Model.Coupon.Title" />
+                            </div>
+                        }
+                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#@carouselId" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Precedente</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#@carouselId" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Successiva</span>
+                    </button>
+                </div>
+            }
+            else if (!string.IsNullOrWhiteSpace(Model.Coupon.ImagePath))
             {
                 <img src="@Model.Coupon.ImagePath" class="coupon-detail-image" alt="Immagine coupon @Model.Coupon.Title" />
             }
