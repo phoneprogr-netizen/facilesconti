@@ -1,1 +1,12 @@
-<h1>Cliente - CreateCoupon</h1>
+@{ ViewData["Title"] = "Crea coupon"; }
+<h1 class="h3 mb-3">Crea nuovo coupon</h1>
+<div class="card border-0 shadow-sm"><div class="card-body">
+    <form class="row g-3">
+        <div class="col-md-8"><label class="form-label">Titolo</label><input class="form-control" placeholder="Es. Menu degustazione -15%" /></div>
+        <div class="col-md-4"><label class="form-label">Categoria</label><select class="form-select"><option>Ristorazione</option><option>Beauty</option></select></div>
+        <div class="col-md-6"><label class="form-label">Valido dal</label><input class="form-control" type="date" /></div>
+        <div class="col-md-6"><label class="form-label">Valido fino</label><input class="form-control" type="date" /></div>
+        <div class="col-12"><label class="form-label">Immagine coupon</label><input class="form-control" type="file" /></div>
+        <div class="col-12"><button type="button" class="btn btn-primary">Pubblica coupon</button></div>
+    </form>
+</div></div>

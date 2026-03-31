@@ -1,1 +1,10 @@
-<h1>Cliente - EditCoupon</h1>
+@{ ViewData["Title"] = "Modifica coupon"; }
+<h1 class="h3 mb-3">Modifica coupon</h1>
+<div class="card border-0 shadow-sm"><div class="card-body">
+    <form class="row g-3">
+        <div class="col-md-8"><label class="form-label">Titolo</label><input class="form-control" value="Sconto pranzo 20%" /></div>
+        <div class="col-md-4"><label class="form-label">Stato</label><select class="form-select"><option>Attivo</option><option>Sospeso</option></select></div>
+        <div class="col-12"><label class="form-label">Descrizione</label><textarea class="form-control" rows="4">Valido dal lunedì al venerdì con prenotazione.</textarea></div>
+        <div class="col-12 d-flex gap-2"><button type="button" class="btn btn-primary">Salva</button><button type="button" class="btn btn-outline-danger">Disattiva</button></div>
+    </form>
+</div></div>

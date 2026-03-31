@@ -1,1 +1,13 @@
-<h1>Cliente - Contract</h1>
+@{ ViewData["Title"] = "Contratto"; }
+<h1 class="h3 mb-3">Contratto attivo</h1>
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between"><span>Piano</span><strong>Business Plus</strong></li>
+            <li class="list-group-item d-flex justify-content-between"><span>Data inizio</span><strong>01/01/2026</strong></li>
+            <li class="list-group-item d-flex justify-content-between"><span>Data fine</span><strong>31/12/2026</strong></li>
+            <li class="list-group-item d-flex justify-content-between"><span>Coupon inclusi</span><strong>100</strong></li>
+        </ul>
+        <a asp-action="Renewal" class="btn btn-outline-primary mt-3">Vai a rinnovo</a>
+    </div>
+</div>

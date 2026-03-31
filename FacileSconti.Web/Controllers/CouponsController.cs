@@ -21,7 +21,14 @@ public class CouponsController : Controller
     public async Task<IActionResult> Detail(string slug, CancellationToken cancellationToken)
     {
         var coupon = await _couponService.GetPublicCouponBySlugAsync(slug, cancellationToken);
-        return coupon is null ? NotFound() : View(coupon);
+        if (coupon is null) return NotFound();
+
+        var similarCoupons = await _couponService.GetSimilarPublicCouponsAsync(coupon.Id, coupon.CategoryName, 4, cancellationToken);
+        return View(new CouponDetailViewModel
+        {
+            Coupon = coupon,
+            SimilarCoupons = similarCoupons
+        });
     }
 
     [Authorize(Roles = "EndUser")]
