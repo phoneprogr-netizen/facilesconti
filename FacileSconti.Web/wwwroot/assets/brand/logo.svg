@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="128" viewBox="0 0 512 128" role="img" aria-labelledby="title desc">
+  <title id="title">Facile Sconti Logo Placeholder</title>
+  <desc id="desc">Logo segnaposto da sostituire con il logo ufficiale.</desc>
+  <rect width="512" height="128" rx="20" fill="#0074D9"/>
+  <text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif" font-size="44" fill="#FFFFFF" font-weight="700">
+    Facile Sconti
+  </text>
+</svg>
