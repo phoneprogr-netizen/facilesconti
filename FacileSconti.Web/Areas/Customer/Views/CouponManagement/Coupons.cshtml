@@ -1,15 +1,50 @@
+@model IReadOnlyList<FacileSconti.Web.Areas.Customer.ViewModels.CustomerCouponListItemViewModel>
+@using FacileSconti.Domain.Enums
 @{ ViewData["Title"] = "I miei coupon"; }
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h3 mb-0">Gestione coupon</h1>
     <a asp-action="CreateCoupon" class="btn btn-primary">Nuovo coupon</a>
 </div>
+@if (TempData["CouponSuccess"] is string successMessage)
+{
+    <div class="alert alert-success">@successMessage</div>
+}
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
             <thead class="table-light"><tr><th>Titolo</th><th>Categoria</th><th>Scadenza</th><th>Stato</th><th></th></tr></thead>
             <tbody>
-                <tr><td>Sconto pranzo 20%</td><td>Ristorazione</td><td>30/04/2026</td><td><span class="badge bg-success">Attivo</span></td><td><a asp-action="EditCoupon" asp-route-id="1" class="btn btn-sm btn-outline-secondary">Modifica</a></td></tr>
-                <tr><td>Aperitivo 2x1</td><td>Food</td><td>18/04/2026</td><td><span class="badge bg-warning text-dark">In revisione</span></td><td><a asp-action="EditCoupon" asp-route-id="2" class="btn btn-sm btn-outline-secondary">Modifica</a></td></tr>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">Non hai ancora coupon disponibili.</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var coupon in Model)
+                    {
+                        var badgeClass = coupon.Status switch
+                        {
+                            CouponStatus.Active => "bg-success",
+                            CouponStatus.Draft => "bg-secondary",
+                            CouponStatus.Suspended => "bg-warning text-dark",
+                            CouponStatus.Expired => "bg-dark",
+                            CouponStatus.Exhausted => "bg-danger",
+                            _ => "bg-light text-dark"
+                        };
+
+                        <tr>
+                            <td>@coupon.Title</td>
+                            <td>@coupon.Category</td>
+                            <td>@coupon.ValidTo.ToString("dd/MM/yyyy")</td>
+                            <td><span class="badge @badgeClass">@coupon.Status</span></td>
+                            <td>
+                                <a asp-action="EditCoupon" asp-route-id="@coupon.Id" class="btn btn-sm btn-outline-secondary">Modifica</a>
+                            </td>
+                        </tr>
+                    }
+                }
             </tbody>
         </table>
     </div>
