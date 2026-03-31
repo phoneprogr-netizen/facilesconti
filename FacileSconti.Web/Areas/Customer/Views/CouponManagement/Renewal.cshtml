@@ -37,6 +37,10 @@ else
                                        value="@plan.Id"
                                        checked="@(Model.Input.SubscriptionPlanId == plan.Id)" />
                                 <span class="form-check-label fw-semibold">@plan.Name</span>
+                                @if (Model.CurrentSubscriptionPlanId == plan.Id)
+                                {
+                                    <span class="badge bg-info ms-2">Piano attuale</span>
+                                }
                             </div>
                             <p class="text-muted small mb-2">@plan.Code</p>
                             <p class="fs-5 fw-semibold">@plan.BasePrice.ToString("0.00")€ / mese</p>
@@ -87,6 +91,7 @@ else
         <button type="submit" class="btn btn-primary" id="standardCheckoutButton">Procedi al pagamento</button>
         <div class="mt-3 @(payPalEnabled ? string.Empty : "d-none")" id="paypalCheckoutContainer">
             <div id="paypal-button-container"></div>
+            <button type="submit" class="btn btn-primary d-none mt-2" id="paypalFallbackButton">Paga ora</button>
             <p class="small text-muted mb-0">Ambiente PayPal attivo: <strong>@payPalEnvironment</strong>.</p>
         </div>
     </form>
@@ -101,6 +106,7 @@ else
             const planInput = () => document.querySelector('input[name="Input.SubscriptionPlanId"]:checked');
             const paypalContainer = document.getElementById('paypalCheckoutContainer');
             const standardButton = document.getElementById('standardCheckoutButton');
+            const paypalFallbackButton = document.getElementById('paypalFallbackButton');
             const antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
 
             const toggleCheckoutMode = () => {
@@ -108,12 +114,20 @@ else
                 const isPayPal = selectedMethod === 'paypal';
                 paypalContainer?.classList.toggle('d-none', !isPayPal);
                 standardButton?.classList.toggle('d-none', isPayPal);
+                if (!isPayPal) {
+                    paypalFallbackButton?.classList.add('d-none');
+                }
             };
 
             paymentInputs.forEach(input => input.addEventListener('change', toggleCheckoutMode));
             toggleCheckoutMode();
 
-            paypal.Buttons({
+            if (!window.paypal || typeof window.paypal.Buttons !== 'function') {
+                paypalFallbackButton?.classList.remove('d-none');
+                return;
+            }
+
+            window.paypal.Buttons({
                 createOrder: async () => {
                     const selectedPlan = planInput()?.value;
                     if (!selectedPlan) throw new Error('Seleziona un piano prima di procedere.');
@@ -158,9 +172,12 @@ else
                 },
                 onError: (err) => {
                     console.error('PayPal error', err);
+                    paypalFallbackButton?.classList.remove('d-none');
                     alert('Errore PayPal: controlla configurazione ambiente e credenziali.');
                 }
-            }).render('#paypal-button-container');
+            }).render('#paypal-button-container').catch(() => {
+                paypalFallbackButton?.classList.remove('d-none');
+            });
         })();
     </script>
 }
