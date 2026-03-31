@@ -1,7 +1,9 @@
+@model FacileSconti.Web.Areas.Customer.ViewModels.CustomerStatisticsViewModel
 @{ ViewData["Title"] = "Statistiche"; }
 <h1 class="h3 mb-3">Statistiche coupon</h1>
 <div class="row g-3">
-    <div class="col-md-4"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-muted">Coupon attivi</div><div class="display-6 fw-semibold">12</div></div></div></div>
-    <div class="col-md-4"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-muted">Download ultimi 30 gg</div><div class="display-6 fw-semibold">284</div></div></div></div>
-    <div class="col-md-4"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-muted">Tasso utilizzo</div><div class="display-6 fw-semibold">38%</div></div></div></div>
+    <div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-muted">Coupon attivi</div><div class="display-6 fw-semibold">@Model.ActiveCoupons</div></div></div></div>
+    <div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-muted">Visualizzazioni ultimi 30 gg</div><div class="display-6 fw-semibold">@Model.ViewsLast30Days</div></div></div></div>
+    <div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-muted">Download ultimi 30 gg</div><div class="display-6 fw-semibold">@Model.DownloadsLast30Days</div></div></div></div>
+    <div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-muted">Tasso utilizzo</div><div class="display-6 fw-semibold">@Model.UsageRate.ToString("0.#")%</div></div></div></div>
 </div>

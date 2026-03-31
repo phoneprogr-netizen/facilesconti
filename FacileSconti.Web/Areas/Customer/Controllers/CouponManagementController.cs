@@ -54,7 +54,55 @@ public class CouponManagementController : Controller
         _payPalOptions = payPalOptions.Value;
     }
 
-    public IActionResult Profile() => View();
+    [HttpGet]
+    public async Task<IActionResult> Profile(CancellationToken cancellationToken)
+    {
+        var ownerUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+
+        var model = await _db.CustomerBusinesses
+            .AsNoTracking()
+            .Where(x => x.OwnerUserId == ownerUserId)
+            .Select(x => new CustomerProfileViewModel
+            {
+                Name = x.Name,
+                Email = x.Email,
+                Phone = x.Phone,
+                City = x.City,
+                Description = x.Description
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (model is null)
+            return NotFound("Profilo attività non trovato per l'utente corrente.");
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Profile(CustomerProfileViewModel model, CancellationToken cancellationToken)
+    {
+        var ownerUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        var customerBusiness = await _db.CustomerBusinesses
+            .FirstOrDefaultAsync(x => x.OwnerUserId == ownerUserId, cancellationToken);
+
+        if (customerBusiness is null)
+            return NotFound("Profilo attività non trovato per l'utente corrente.");
+
+        if (!ModelState.IsValid)
+            return View(model);
+
+        customerBusiness.Name = model.Name.Trim();
+        customerBusiness.Email = model.Email.Trim();
+        customerBusiness.Phone = model.Phone.Trim();
+        customerBusiness.City = model.City.Trim();
+        customerBusiness.Description = string.IsNullOrWhiteSpace(model.Description) ? null : model.Description.Trim();
+
+        await _db.SaveChangesAsync(cancellationToken);
+        TempData["ProfileSuccess"] = "Profilo aggiornato correttamente.";
+
+        return RedirectToAction(nameof(Profile));
+    }
     public async Task<IActionResult> Contract(CancellationToken cancellationToken)
     {
         var ownerUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
@@ -262,7 +310,43 @@ public class CouponManagementController : Controller
     }
 
     public IActionResult EditCoupon(int id) => View();
-    public IActionResult Statistics() => View();
+    [HttpGet]
+    public async Task<IActionResult> Statistics(CancellationToken cancellationToken)
+    {
+        var ownerUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        var now = DateTime.UtcNow;
+        var start30Days = now.AddDays(-30);
+
+        var activeCoupons = await _db.Coupons
+            .AsNoTracking()
+            .CountAsync(x => x.CustomerBusiness.OwnerUserId == ownerUserId && x.Status == CouponStatus.Active && !x.IsDeleted, cancellationToken);
+
+        var downloadsLast30Days = await _db.CouponDownloads
+            .AsNoTracking()
+            .CountAsync(x => x.Coupon.CustomerBusiness.OwnerUserId == ownerUserId && x.DownloadedAt >= start30Days, cancellationToken);
+
+        var redeemedLast30Days = await _db.CouponDownloads
+            .AsNoTracking()
+            .CountAsync(x => x.Coupon.CustomerBusiness.OwnerUserId == ownerUserId && x.DownloadedAt >= start30Days && x.IsRedeemed, cancellationToken);
+
+        var viewsLast30Days = await _db.CouponViews
+            .AsNoTracking()
+            .CountAsync(x => x.Coupon.CustomerBusiness.OwnerUserId == ownerUserId && x.ViewedAt >= start30Days, cancellationToken);
+
+        var usageRate = downloadsLast30Days == 0
+            ? 0
+            : Math.Round((decimal)redeemedLast30Days / downloadsLast30Days * 100, 1);
+
+        var vm = new CustomerStatisticsViewModel
+        {
+            ActiveCoupons = activeCoupons,
+            DownloadsLast30Days = downloadsLast30Days,
+            UsageRate = usageRate,
+            ViewsLast30Days = viewsLast30Days
+        };
+
+        return View(vm);
+    }
 
     [HttpGet]
     public async Task<IActionResult> Boost(CancellationToken cancellationToken)
