@@ -13,6 +13,7 @@ CREATE TABLE SubscriptionPlans (
     UnlimitedCoupons BIT NOT NULL DEFAULT 0,
     UnlimitedDownloads BIT NOT NULL DEFAULT 0,
     AllowsBoost BIT NOT NULL DEFAULT 0,
+    SelectableUntil DATE NULL,
     CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
     UpdatedAt DATETIME2 NULL,
     CreatedBy NVARCHAR(100) NULL,

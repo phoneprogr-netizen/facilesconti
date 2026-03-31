@@ -1,1 +1,34 @@
-<h1>Utente - Newsletter</h1>
+@model FacileSconti.Web.Areas.EndUser.ViewModels.EndUserNewsletterViewModel
+@{ ViewData["Title"] = "Newsletter"; }
+
+<h1 class="h3 mb-3">Newsletter</h1>
+@if (Model.Subscriptions.Count == 0)
+{
+    <div class="alert alert-info">Nessuna iscrizione newsletter trovata per il tuo account.</div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            @foreach (var item in Model.Subscriptions)
+            {
+                <div class="border rounded p-3 mb-2">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div>
+                            <div class="fw-semibold">@item.Email</div>
+                            <small class="text-muted">Iscrizione del @item.CreatedAt.ToString("dd/MM/yyyy")</small>
+                        </div>
+                        @if (item.IsConfirmed)
+                        {
+                            <span class="badge text-bg-success">Confermata</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-warning">Da confermare</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}

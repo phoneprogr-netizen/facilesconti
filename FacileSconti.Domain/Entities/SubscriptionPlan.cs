@@ -13,6 +13,7 @@ public class SubscriptionPlan : AuditableEntity
     public bool UnlimitedCoupons { get; set; }
     public bool UnlimitedDownloads { get; set; }
     public bool AllowsBoost { get; set; }
+    public DateOnly? SelectableUntil { get; set; }
 
     public ICollection<CustomerContract> Contracts { get; set; } = new List<CustomerContract>();
     public ICollection<ContractFeature> Features { get; set; } = new List<ContractFeature>();

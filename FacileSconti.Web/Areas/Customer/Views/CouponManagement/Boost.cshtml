@@ -1,9 +1,64 @@
+@model FacileSconti.Web.Areas.Customer.ViewModels.CustomerBoostPageViewModel
 @{ ViewData["Title"] = "Boost"; }
 <h1 class="h3 mb-3">Promozione in homepage</h1>
-<div class="card border-0 shadow-sm"><div class="card-body">
-    <p class="text-muted">Dai maggiore visibilità ai coupon più importanti con i pacchetti boost.</p>
-    <div class="d-flex flex-wrap gap-2">
-        <button type="button" class="btn btn-outline-primary">Boost 7 giorni</button>
-        <button type="button" class="btn btn-primary">Boost 30 giorni</button>
+
+@if (TempData["BoostSuccess"] is string boostSuccess)
+{
+    <div class="alert alert-success">@boostSuccess</div>
+}
+@if (TempData["BoostError"] is string boostError)
+{
+    <div class="alert alert-danger">@boostError</div>
+}
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <p class="text-muted mb-0">
+            Il boost è un servizio a pagamento: seleziona un coupon e un pacchetto durata, poi invia la richiesta.
+            L'importo viene mostrato nel bottone del piano scelto.
+        </p>
     </div>
-</div></div>
+</div>
+
+@if (!Model.CustomerCanUseBoost)
+{
+    <div class="alert alert-warning">@Model.BoostDisabledReason</div>
+}
+
+<form method="post" asp-action="ActivateBoost">
+    @Html.AntiForgeryToken()
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+            <div class="mb-3">
+                <label asp-for="Input.CouponId" class="form-label">Coupon da mettere in boost</label>
+                <select asp-for="Input.CouponId" class="form-select" disabled="@(Model.Coupons.Count == 0 || !Model.CustomerCanUseBoost)">
+                    <option value="">Seleziona coupon</option>
+                    @foreach (var coupon in Model.Coupons)
+                    {
+                        <option value="@coupon.Id">@coupon.Title (valido fino al @coupon.ValidTo.ToString("dd/MM/yyyy"))</option>
+                    }
+                </select>
+                <span asp-validation-for="Input.CouponId" class="text-danger"></span>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var plan in Model.BoostPlans)
+                {
+                    <button type="submit"
+                            class="btn btn-outline-primary"
+                            name="Input.HomeBoostPlanId"
+                            value="@plan.Id"
+                            disabled="@(Model.Coupons.Count == 0 || !Model.CustomerCanUseBoost)">
+                        @plan.Name - @plan.Price.ToString("0.00")€
+                    </button>
+                }
+            </div>
+            <span asp-validation-for="Input.HomeBoostPlanId" class="text-danger"></span>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

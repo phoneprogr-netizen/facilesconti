@@ -1,1 +1,43 @@
-<h1>Utente - MyCoupons</h1>
+@model FacileSconti.Web.Areas.EndUser.ViewModels.EndUserMyCouponsViewModel
+@{ ViewData["Title"] = "I miei coupon"; }
+
+<h1 class="h3 mb-3">I miei coupon</h1>
+@if (Model.Coupons.Count == 0)
+{
+    <div class="alert alert-info">Non hai ancora scaricato coupon.</div>
+}
+else
+{
+    <div class="table-responsive card border-0 shadow-sm">
+        <table class="table mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th>Coupon</th>
+                    <th>Codice</th>
+                    <th>Scaricato il</th>
+                    <th>Stato</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var coupon in Model.Coupons)
+            {
+                <tr>
+                    <td>@coupon.Title</td>
+                    <td><code>@coupon.Code</code></td>
+                    <td>@coupon.DownloadedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>
+                        @if (coupon.IsRedeemed)
+                        {
+                            <span class="badge text-bg-secondary">Utilizzato</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-success">Disponibile</span>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
