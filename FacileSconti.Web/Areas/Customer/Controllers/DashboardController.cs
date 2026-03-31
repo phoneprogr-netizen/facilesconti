@@ -1,6 +1,7 @@
 using FacileSconti.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace FacileSconti.Web.Areas.Customer.Controllers;
 
@@ -13,7 +14,8 @@ public class DashboardController : Controller
 
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
-        var model = await _dashboardService.GetCustomerDashboardAsync(User.Identity!.Name ?? string.Empty, cancellationToken);
+        var ownerUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        var model = await _dashboardService.GetCustomerDashboardAsync(ownerUserId, cancellationToken);
         return View(model);
     }
 }
