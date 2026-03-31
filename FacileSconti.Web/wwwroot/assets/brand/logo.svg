@@ -1,9 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="128" viewBox="0 0 512 128" role="img" aria-labelledby="title desc">
-  <title id="title">Facile Sconti Logo Placeholder</title>
-  <desc id="desc">Logo segnaposto da sostituire con il logo ufficiale.</desc>
-  <rect width="512" height="128" rx="20" fill="#0074D9"/>
-  <text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle"
-        font-family="Arial, Helvetica, sans-serif" font-size="44" fill="#FFFFFF" font-weight="700">
-    Facile Sconti
+<svg width="320" height="80" viewBox="0 0 320 80" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .facile { fill: #0074D9; font-family: Arial, sans-serif; font-weight: bold; }
+    .sconti { fill: #FF8C33; font-family: Arial, sans-serif; font-weight: bold; }
+    .tag { fill: #3CB371; }
+    .percent { fill: #FFD72A; font-weight: bold; font-family: Arial, sans-serif; }
+  </style>
+
+  <!-- Testo -->
+  <text x="10" y="50" font-size="36">
+    <tspan class="facile">Facile</tspan>
+    <tspan class="sconti">Sconti</tspan>
   </text>
+
+  <!-- Tag -->
+  <rect x="240" y="15" width="60" height="40" rx="8" class="tag"></rect>
+  <text x="255" y="45" font-size="22" class="percent">%</text>
 </svg>
