@@ -1,3 +1,4 @@
+@model FacileSconti.Web.Areas.Customer.ViewModels.CustomerContractViewModel?
 @{ ViewData["Title"] = "Contratto"; }
 <h1 class="h3 mb-3">Contratto attivo</h1>
 
@@ -5,15 +6,38 @@
 {
     <div class="alert alert-success">@renewalSuccess</div>
 }
+@if (TempData["RenewalWarning"] is string renewalWarning)
+{
+    <div class="alert alert-warning">@renewalWarning</div>
+}
 
-<div class="card border-0 shadow-sm">
-    <div class="card-body">
-        <ul class="list-group list-group-flush">
-            <li class="list-group-item d-flex justify-content-between"><span>Piano</span><strong>Business Plus</strong></li>
-            <li class="list-group-item d-flex justify-content-between"><span>Data inizio</span><strong>01/01/2026</strong></li>
-            <li class="list-group-item d-flex justify-content-between"><span>Data fine</span><strong>31/12/2026</strong></li>
-            <li class="list-group-item d-flex justify-content-between"><span>Coupon inclusi</span><strong>100</strong></li>
-        </ul>
-        <a asp-action="Renewal" class="btn btn-outline-primary mt-3">Vai a rinnovo</a>
+@if (Model is null)
+{
+    <div class="alert alert-warning rounded-4">Nessun contratto attivo trovato per questa utenza.</div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between"><span>Azienda</span><strong>@Model.BusinessName</strong></li>
+                <li class="list-group-item d-flex justify-content-between"><span>Piano</span><strong>@Model.PlanName</strong></li>
+                <li class="list-group-item d-flex justify-content-between"><span>Data inizio</span><strong>@Model.StartDate.ToString("dd/MM/yyyy")</strong></li>
+                <li class="list-group-item d-flex justify-content-between"><span>Data fine</span><strong>@Model.EndDate.ToString("dd/MM/yyyy")</strong></li>
+                <li class="list-group-item d-flex justify-content-between"><span>Giorni alla scadenza</span><strong>@Model.DaysToExpiration</strong></li>
+                <li class="list-group-item d-flex justify-content-between"><span>Coupon inclusi</span><strong>@(Model.UnlimitedCoupons ? "Illimitati" : Model.MaxActiveCoupons)</strong></li>
+            </ul>
+
+            @if (Model.CanRenewNow)
+            {
+                <a asp-action="Renewal" class="btn btn-outline-primary mt-3">Vai a rinnovo</a>
+            }
+            else
+            {
+                <div class="alert alert-info mt-3 mb-0">
+                    Il rinnovo sarà disponibile a partire da 10 giorni prima della scadenza del contratto.
+                </div>
+            }
+        </div>
     </div>
-</div>
+}
