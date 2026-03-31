@@ -54,6 +54,53 @@
         </div>
     </div>
 </nav>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    var currentArea = ViewContext.RouteData.Values["area"]?.ToString() ?? string.Empty;
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+
+    string ActiveClass(string area, string controller, string action)
+        => string.Equals(currentArea, area, StringComparison.OrdinalIgnoreCase) &&
+           string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase) &&
+           string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase)
+            ? "active"
+            : string.Empty;
+
+    <div class="bg-light border-bottom">
+        <div class="container py-2">
+            <div class="nav nav-pills flex-wrap gap-2">
+                @if (User.IsInRole("Admin"))
+                {
+                    <a class="nav-link @ActiveClass("Admin", "Dashboard", "Index")" asp-area="Admin" asp-controller="Dashboard" asp-action="Index">Dashboard admin</a>
+                    <a class="nav-link @ActiveClass("Admin", "Management", "Customers")" asp-area="Admin" asp-controller="Management" asp-action="Customers">Clienti</a>
+                    <a class="nav-link @ActiveClass("Admin", "Management", "Contracts")" asp-area="Admin" asp-controller="Management" asp-action="Contracts">Contratti</a>
+                    <a class="nav-link @ActiveClass("Admin", "Management", "Coupons")" asp-area="Admin" asp-controller="Management" asp-action="Coupons">Coupon</a>
+                    <a class="nav-link @ActiveClass("Admin", "Management", "Payments")" asp-area="Admin" asp-controller="Management" asp-action="Payments">Pagamenti</a>
+                    <a class="nav-link @ActiveClass("Admin", "Management", "Statistics")" asp-area="Admin" asp-controller="Management" asp-action="Statistics">Statistiche</a>
+                }
+                else if (User.IsInRole("Customer"))
+                {
+                    <a class="nav-link @ActiveClass("Customer", "Dashboard", "Index")" asp-area="Customer" asp-controller="Dashboard" asp-action="Index">Dashboard cliente</a>
+                    <a class="nav-link @ActiveClass("Customer", "CouponManagement", "CreateCoupon")" asp-area="Customer" asp-controller="CouponManagement" asp-action="CreateCoupon">Nuovo coupon</a>
+                    <a class="nav-link @ActiveClass("Customer", "CouponManagement", "Coupons")" asp-area="Customer" asp-controller="CouponManagement" asp-action="Coupons">I miei coupon</a>
+                    <a class="nav-link @ActiveClass("Customer", "CouponManagement", "Contract")" asp-area="Customer" asp-controller="CouponManagement" asp-action="Contract">Contratto</a>
+                    <a class="nav-link @ActiveClass("Customer", "CouponManagement", "Renewal")" asp-area="Customer" asp-controller="CouponManagement" asp-action="Renewal">Rinnovo</a>
+                    <a class="nav-link @ActiveClass("Customer", "CouponManagement", "Profile")" asp-area="Customer" asp-controller="CouponManagement" asp-action="Profile">Profilo</a>
+                    <a class="nav-link @ActiveClass("Customer", "CouponManagement", "Statistics")" asp-area="Customer" asp-controller="CouponManagement" asp-action="Statistics">Statistiche</a>
+                    <a class="nav-link @ActiveClass("Customer", "CouponManagement", "Boost")" asp-area="Customer" asp-controller="CouponManagement" asp-action="Boost">Boost</a>
+                }
+                else if (User.IsInRole("EndUser"))
+                {
+                    <a class="nav-link @ActiveClass("EndUser", "Dashboard", "Index")" asp-area="EndUser" asp-controller="Dashboard" asp-action="Index">Dashboard utente</a>
+                    <a class="nav-link @ActiveClass("EndUser", "Profile", "Profile")" asp-area="EndUser" asp-controller="Profile" asp-action="Profile">Profilo</a>
+                    <a class="nav-link @ActiveClass("EndUser", "Profile", "MyCoupons")" asp-area="EndUser" asp-controller="Profile" asp-action="MyCoupons">I miei coupon</a>
+                    <a class="nav-link @ActiveClass("EndUser", "Profile", "Newsletter")" asp-area="EndUser" asp-controller="Profile" asp-action="Newsletter">Newsletter</a>
+                }
+            </div>
+        </div>
+    </div>
+}
 <main class="container py-4">@RenderBody()</main>
 <footer class="bg-light border-top py-4 mt-5">
     <div class="container small d-flex flex-column flex-md-row justify-content-between gap-2">
