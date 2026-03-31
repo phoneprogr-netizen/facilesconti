@@ -126,3 +126,81 @@ body {
 .text-brand-orange { color: var(--fs-orange) !important; }
 .text-brand-green { color: var(--fs-green) !important; }
 .text-brand-yellow { color: var(--fs-yellow) !important; }
+
+.static-page-hero {
+  border-radius: 1rem;
+  padding: clamp(1.25rem, 2vw, 2rem);
+  color: #fff;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, .08);
+}
+
+.contact-hero {
+  background: linear-gradient(135deg, rgba(0, 116, 217, .95), rgba(60, 179, 113, .92));
+}
+
+.about-hero {
+  background: linear-gradient(135deg, rgba(34, 34, 34, .95), rgba(0, 116, 217, .9));
+}
+
+.info-panel,
+.company-card,
+.values-panel {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 6px 18px rgba(34, 34, 34, .06);
+}
+
+.contact-list {
+  display: grid;
+  gap: .75rem;
+}
+
+.contact-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .75rem;
+  padding: .9rem 1rem;
+  border: 1px solid #e9ecef;
+  border-radius: .75rem;
+  text-decoration: none;
+  color: inherit;
+  transition: .2s ease;
+}
+
+.contact-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(0, 116, 217, .5);
+  box-shadow: 0 10px 20px rgba(0, 116, 217, .12);
+}
+
+.contact-label {
+  font-weight: 600;
+}
+
+.feature-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: .45rem;
+}
+
+.value-chip {
+  border-radius: .75rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  padding: .9rem;
+  height: 100%;
+}
+
+.value-chip strong {
+  display: block;
+  margin-bottom: .2rem;
+}
+
+.value-chip span {
+  color: #6c757d;
+  font-size: .95rem;
+}
