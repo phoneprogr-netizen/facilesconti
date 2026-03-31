@@ -55,10 +55,44 @@ public class CouponManagementController : Controller
     }
 
     public IActionResult Profile() => View();
-    public IActionResult Contract() => View();
+    public async Task<IActionResult> Contract(CancellationToken cancellationToken)
+    {
+        var ownerUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var contract = await _db.CustomerContracts
+            .AsNoTracking()
+            .Where(x => x.CustomerBusiness.OwnerUserId == ownerUserId
+                        && x.Status == ContractStatus.Active
+                        && x.StartDate <= today
+                        && x.EndDate >= today)
+            .OrderByDescending(x => x.EndDate)
+            .Select(x => new CustomerContractViewModel
+            {
+                BusinessName = x.CustomerBusiness.BusinessName,
+                PlanName = x.SubscriptionPlan.Name,
+                StartDate = x.StartDate,
+                EndDate = x.EndDate,
+                MaxActiveCoupons = x.MaxActiveCoupons,
+                MaxDownloadsPerCoupon = x.MaxDownloadsPerCoupon,
+                UnlimitedCoupons = x.UnlimitedCoupons,
+                UnlimitedDownloads = x.UnlimitedDownloads,
+                DaysToExpiration = x.EndDate.DayNumber - today.DayNumber,
+                CanRenewNow = x.EndDate.DayNumber - today.DayNumber <= 10
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return View(contract);
+    }
 
     public async Task<IActionResult> Renewal(CancellationToken cancellationToken)
     {
+        if (!await IsRenewalWindowOpenAsync(cancellationToken))
+        {
+            TempData["RenewalWarning"] = "Il rinnovo è disponibile solo nei 10 giorni precedenti la scadenza del contratto attivo.";
+            return RedirectToAction(nameof(Contract));
+        }
+
         SetPayPalViewData();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var availablePlans = await _db.SubscriptionPlans
@@ -98,6 +132,12 @@ public class CouponManagementController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Renewal(CustomerRenewalViewModel model, CancellationToken cancellationToken)
     {
+        if (!await IsRenewalWindowOpenAsync(cancellationToken))
+        {
+            TempData["RenewalWarning"] = "Il rinnovo è disponibile solo nei 10 giorni precedenti la scadenza del contratto attivo.";
+            return RedirectToAction(nameof(Contract));
+        }
+
         SetPayPalViewData();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         model.AvailablePlans = await _db.SubscriptionPlans
@@ -371,6 +411,27 @@ public class CouponManagementController : Controller
         };
 
         return vm;
+    }
+
+    private async Task<bool> IsRenewalWindowOpenAsync(CancellationToken cancellationToken)
+    {
+        var ownerUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var contractEndDate = await _db.CustomerContracts
+            .AsNoTracking()
+            .Where(x => x.CustomerBusiness.OwnerUserId == ownerUserId
+                        && x.Status == ContractStatus.Active
+                        && x.StartDate <= today
+                        && x.EndDate >= today)
+            .OrderByDescending(x => x.EndDate)
+            .Select(x => (DateOnly?)x.EndDate)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (!contractEndDate.HasValue)
+            return false;
+
+        var daysToExpiration = contractEndDate.Value.DayNumber - today.DayNumber;
+        return daysToExpiration is >= 0 and <= 10;
     }
 
     private void SetPayPalViewData()

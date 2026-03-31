@@ -23,6 +23,20 @@ public class CustomerRenewalViewModel
     public List<PaymentMethodOptionViewModel> PaymentMethods { get; set; } = [];
 }
 
+public class CustomerContractViewModel
+{
+    public string BusinessName { get; set; } = string.Empty;
+    public string PlanName { get; set; } = string.Empty;
+    public DateOnly StartDate { get; set; }
+    public DateOnly EndDate { get; set; }
+    public int MaxActiveCoupons { get; set; }
+    public int? MaxDownloadsPerCoupon { get; set; }
+    public bool UnlimitedCoupons { get; set; }
+    public bool UnlimitedDownloads { get; set; }
+    public int DaysToExpiration { get; set; }
+    public bool CanRenewNow { get; set; }
+}
+
 public class RenewalPaymentInputViewModel
 {
     [Required(ErrorMessage = "Seleziona un piano.")]
