@@ -21,6 +21,7 @@ public class CustomerRenewalViewModel
     public List<PlanSelectionItemViewModel> AvailablePlans { get; set; } = [];
     public RenewalPaymentInputViewModel Input { get; set; } = new();
     public List<PaymentMethodOptionViewModel> PaymentMethods { get; set; } = [];
+    public int? CurrentSubscriptionPlanId { get; set; }
 }
 
 public class CustomerContractViewModel

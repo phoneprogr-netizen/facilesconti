@@ -94,33 +94,17 @@ public class CouponManagementController : Controller
         }
 
         SetPayPalViewData();
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var availablePlans = await _db.SubscriptionPlans
-            .AsNoTracking()
-            .Where(x => x.IsActive && !x.IsDeleted && (x.SelectableUntil == null || x.SelectableUntil >= today))
-            .OrderBy(x => x.BasePrice)
-            .Select(x => new PlanSelectionItemViewModel
-            {
-                Id = x.Id,
-                Name = x.Name,
-                Code = x.Code,
-                BasePrice = x.BasePrice,
-                MaxActiveCoupons = x.MaxActiveCoupons,
-                MaxDownloadsPerCoupon = x.MaxDownloadsPerCoupon,
-                UnlimitedCoupons = x.UnlimitedCoupons,
-                UnlimitedDownloads = x.UnlimitedDownloads,
-                AllowsBoost = x.AllowsBoost,
-                SelectableUntil = x.SelectableUntil
-            })
-            .ToListAsync(cancellationToken);
+        var activeContract = await GetActiveContractAsync(cancellationToken);
+        var availablePlans = await LoadRenewalPlansAsync(activeContract?.SubscriptionPlanId, cancellationToken);
 
         var vm = new CustomerRenewalViewModel
         {
             AvailablePlans = availablePlans,
             PaymentMethods = RenewalPaymentMethods,
+            CurrentSubscriptionPlanId = activeContract?.SubscriptionPlanId,
             Input = new RenewalPaymentInputViewModel
             {
-                SubscriptionPlanId = availablePlans.FirstOrDefault()?.Id,
+                SubscriptionPlanId = activeContract?.SubscriptionPlanId ?? availablePlans.FirstOrDefault()?.Id,
                 PaymentMethodCode = RenewalPaymentMethods.First(x => x.IsDefault).Code
             }
         };
@@ -139,25 +123,9 @@ public class CouponManagementController : Controller
         }
 
         SetPayPalViewData();
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        model.AvailablePlans = await _db.SubscriptionPlans
-            .AsNoTracking()
-            .Where(x => x.IsActive && !x.IsDeleted && (x.SelectableUntil == null || x.SelectableUntil >= today))
-            .OrderBy(x => x.BasePrice)
-            .Select(x => new PlanSelectionItemViewModel
-            {
-                Id = x.Id,
-                Name = x.Name,
-                Code = x.Code,
-                BasePrice = x.BasePrice,
-                MaxActiveCoupons = x.MaxActiveCoupons,
-                MaxDownloadsPerCoupon = x.MaxDownloadsPerCoupon,
-                UnlimitedCoupons = x.UnlimitedCoupons,
-                UnlimitedDownloads = x.UnlimitedDownloads,
-                AllowsBoost = x.AllowsBoost,
-                SelectableUntil = x.SelectableUntil
-            })
-            .ToListAsync(cancellationToken);
+        var activeContract = await GetActiveContractAsync(cancellationToken);
+        model.CurrentSubscriptionPlanId = activeContract?.SubscriptionPlanId;
+        model.AvailablePlans = await LoadRenewalPlansAsync(model.CurrentSubscriptionPlanId, cancellationToken);
         model.PaymentMethods = RenewalPaymentMethods;
 
         var selectedPlan = model.AvailablePlans.FirstOrDefault(x => x.Id == model.Input.SubscriptionPlanId);
@@ -415,23 +383,56 @@ public class CouponManagementController : Controller
 
     private async Task<bool> IsRenewalWindowOpenAsync(CancellationToken cancellationToken)
     {
-        var ownerUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var contractEndDate = await _db.CustomerContracts
-            .AsNoTracking()
-            .Where(x => x.CustomerBusiness.OwnerUserId == ownerUserId
-                        && x.Status == ContractStatus.Active
-                        && x.StartDate <= today
-                        && x.EndDate >= today)
-            .OrderByDescending(x => x.EndDate)
-            .Select(x => (DateOnly?)x.EndDate)
-            .FirstOrDefaultAsync(cancellationToken);
+        var contractEndDate = (await GetActiveContractAsync(cancellationToken))?.EndDate;
 
         if (!contractEndDate.HasValue)
             return false;
 
         var daysToExpiration = contractEndDate.Value.DayNumber - today.DayNumber;
         return daysToExpiration is >= 0 and <= 10;
+    }
+
+    private async Task<CustomerContract?> GetActiveContractAsync(CancellationToken cancellationToken)
+    {
+        var ownerUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        return await _db.CustomerContracts
+            .AsNoTracking()
+            .Where(x => x.CustomerBusiness.OwnerUserId == ownerUserId
+                        && x.Status == ContractStatus.Active
+                        && x.StartDate <= today
+                        && x.EndDate >= today)
+            .OrderByDescending(x => x.EndDate)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    private async Task<List<PlanSelectionItemViewModel>> LoadRenewalPlansAsync(int? currentPlanId, CancellationToken cancellationToken)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        return await _db.SubscriptionPlans
+            .AsNoTracking()
+            .Where(x => x.IsActive
+                        && !x.IsDeleted
+                        && ((x.SelectableUntil == null || x.SelectableUntil >= today)
+                            || (currentPlanId.HasValue && x.Id == currentPlanId.Value)))
+            .OrderBy(x => x.BasePrice)
+            .Select(x => new PlanSelectionItemViewModel
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Code = x.Code,
+                BasePrice = x.BasePrice,
+                MaxActiveCoupons = x.MaxActiveCoupons,
+                MaxDownloadsPerCoupon = x.MaxDownloadsPerCoupon,
+                UnlimitedCoupons = x.UnlimitedCoupons,
+                UnlimitedDownloads = x.UnlimitedDownloads,
+                AllowsBoost = x.AllowsBoost,
+                SelectableUntil = x.SelectableUntil
+            })
+            .ToListAsync(cancellationToken);
     }
 
     private void SetPayPalViewData()
