@@ -1,11 +1,16 @@
 using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
 using FacileSconti.Domain.Entities;
 using FacileSconti.Domain.Enums;
 using FacileSconti.Infrastructure.Data;
 using FacileSconti.Web.Areas.Customer.ViewModels;
+using FacileSconti.Web.Options;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using System.Net.Http.Headers;
 
 namespace FacileSconti.Web.Areas.Customer.Controllers;
 
@@ -14,6 +19,8 @@ namespace FacileSconti.Web.Areas.Customer.Controllers;
 public class CouponManagementController : Controller
 {
     private readonly ApplicationDbContext _db;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly PayPalOptions _payPalOptions;
     private static readonly List<PaymentMethodOptionViewModel> RenewalPaymentMethods =
     [
         new()
@@ -37,9 +44,14 @@ public class CouponManagementController : Controller
         }
     ];
 
-    public CouponManagementController(ApplicationDbContext db)
+    public CouponManagementController(
+        ApplicationDbContext db,
+        IHttpClientFactory httpClientFactory,
+        IOptions<PayPalOptions> payPalOptions)
     {
         _db = db;
+        _httpClientFactory = httpClientFactory;
+        _payPalOptions = payPalOptions.Value;
     }
 
     public IActionResult Profile() => View();
@@ -47,6 +59,7 @@ public class CouponManagementController : Controller
 
     public async Task<IActionResult> Renewal(CancellationToken cancellationToken)
     {
+        SetPayPalViewData();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var availablePlans = await _db.SubscriptionPlans
             .AsNoTracking()
@@ -85,6 +98,7 @@ public class CouponManagementController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Renewal(CustomerRenewalViewModel model, CancellationToken cancellationToken)
     {
+        SetPayPalViewData();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         model.AvailablePlans = await _db.SubscriptionPlans
             .AsNoTracking()
@@ -125,6 +139,93 @@ public class CouponManagementController : Controller
 
         TempData["RenewalSuccess"] = $"Richiesta di rinnovo inviata: piano {selectedPlan!.Name} con pagamento {selectedPaymentMethod.Name}.";
         return RedirectToAction(nameof(Contract));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreatePayPalOrder([FromBody] RenewalPaymentInputViewModel input, CancellationToken cancellationToken)
+    {
+        if (!_payPalOptions.Enabled)
+            return BadRequest(new { message = "PayPal non è abilitato nei settaggi applicativi." });
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var selectedPlan = await _db.SubscriptionPlans
+            .AsNoTracking()
+            .Where(x => x.Id == input.SubscriptionPlanId && x.IsActive && !x.IsDeleted && (x.SelectableUntil == null || x.SelectableUntil >= today))
+            .Select(x => new { x.Id, x.Name, x.BasePrice })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (selectedPlan is null)
+            return BadRequest(new { message = "Piano non valido o non disponibile." });
+
+        var accessToken = await GetPayPalAccessTokenAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(accessToken))
+            return StatusCode(502, new { message = "Impossibile autenticarsi con PayPal." });
+
+        var orderRequest = new
+        {
+            intent = "CAPTURE",
+            purchase_units = new[]
+            {
+                new
+                {
+                    description = $"Rinnovo piano {selectedPlan.Name}",
+                    amount = new
+                    {
+                        currency_code = _payPalOptions.CurrencyCode,
+                        value = selectedPlan.BasePrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
+                    }
+                }
+            }
+        };
+
+        var client = _httpClientFactory.CreateClient();
+        client.BaseAddress = new Uri(GetPayPalApiBaseUrl());
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        using var createOrderRequest = new HttpRequestMessage(HttpMethod.Post, "/v2/checkout/orders")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(orderRequest), Encoding.UTF8, "application/json")
+        };
+        createOrderRequest.Headers.Add("Prefer", "return=representation");
+
+        using var createOrderResponse = await client.SendAsync(createOrderRequest, cancellationToken);
+        var content = await createOrderResponse.Content.ReadAsStringAsync(cancellationToken);
+        if (!createOrderResponse.IsSuccessStatusCode)
+            return StatusCode((int)createOrderResponse.StatusCode, new { message = "Creazione ordine PayPal fallita.", details = content });
+
+        using var doc = JsonDocument.Parse(content);
+        var orderId = doc.RootElement.TryGetProperty("id", out var idProp) ? idProp.GetString() : null;
+        if (string.IsNullOrWhiteSpace(orderId))
+            return StatusCode(502, new { message = "PayPal ha risposto senza order id." });
+
+        return Ok(new { id = orderId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CapturePayPalOrder([FromBody] CapturePayPalOrderRequest request, CancellationToken cancellationToken)
+    {
+        if (!_payPalOptions.Enabled)
+            return BadRequest(new { message = "PayPal non è abilitato nei settaggi applicativi." });
+        if (string.IsNullOrWhiteSpace(request.OrderId))
+            return BadRequest(new { message = "Order id PayPal mancante." });
+
+        var accessToken = await GetPayPalAccessTokenAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(accessToken))
+            return StatusCode(502, new { message = "Impossibile autenticarsi con PayPal." });
+
+        var client = _httpClientFactory.CreateClient();
+        client.BaseAddress = new Uri(GetPayPalApiBaseUrl());
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        using var captureResponse = await client.PostAsync($"/v2/checkout/orders/{request.OrderId}/capture", content: null, cancellationToken);
+        var content = await captureResponse.Content.ReadAsStringAsync(cancellationToken);
+        if (!captureResponse.IsSuccessStatusCode)
+            return StatusCode((int)captureResponse.StatusCode, new { message = "Cattura pagamento PayPal fallita.", details = content });
+
+        TempData["RenewalSuccess"] = "Pagamento PayPal acquisito correttamente. Il rinnovo è stato registrato.";
+        return Ok(new { success = true, redirectUrl = Url.Action(nameof(Contract)) });
     }
 
     public IActionResult Coupons() => View();
@@ -270,5 +371,48 @@ public class CouponManagementController : Controller
         };
 
         return vm;
+    }
+
+    private void SetPayPalViewData()
+    {
+        ViewData["PayPalEnabled"] = _payPalOptions.Enabled;
+        ViewData["PayPalClientId"] = _payPalOptions.ClientId;
+        ViewData["PayPalCurrencyCode"] = _payPalOptions.CurrencyCode;
+        ViewData["PayPalEnvironment"] = _payPalOptions.IsSandbox ? "sandbox" : "production";
+    }
+
+    private string GetPayPalApiBaseUrl() =>
+        _payPalOptions.IsSandbox ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
+
+    private async Task<string?> GetPayPalAccessTokenAsync(CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_payPalOptions.ClientId) || string.IsNullOrWhiteSpace(_payPalOptions.ClientSecret))
+            return null;
+
+        var basicToken = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_payPalOptions.ClientId}:{_payPalOptions.ClientSecret}"));
+        var client = _httpClientFactory.CreateClient();
+        client.BaseAddress = new Uri(GetPayPalApiBaseUrl());
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", basicToken);
+
+        using var tokenRequest = new HttpRequestMessage(HttpMethod.Post, "/v1/oauth2/token")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "client_credentials"
+            })
+        };
+
+        using var tokenResponse = await client.SendAsync(tokenRequest, cancellationToken);
+        if (!tokenResponse.IsSuccessStatusCode)
+            return null;
+
+        var json = await tokenResponse.Content.ReadAsStringAsync(cancellationToken);
+        using var tokenDoc = JsonDocument.Parse(json);
+        return tokenDoc.RootElement.TryGetProperty("access_token", out var tokenProp) ? tokenProp.GetString() : null;
+    }
+
+    public sealed class CapturePayPalOrderRequest
+    {
+        public string OrderId { get; set; } = string.Empty;
     }
 }

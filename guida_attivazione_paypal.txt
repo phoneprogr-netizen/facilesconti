@@ -1,0 +1,78 @@
+GUIDA RAPIDA - ATTIVARE PAYPAL SU FACILESCONTI
+=============================================
+
+Data: 31/03/2026
+
+1) CREA/VERIFICA ACCOUNT PAYPAL BUSINESS
+----------------------------------------
+- Accedi a https://developer.paypal.com
+- Collega un account Business PayPal verificato.
+- Completa KYC/identità e dati fiscali del conto business.
+
+2) CONFIGURA APP REST IN SANDBOX
+--------------------------------
+- In Developer Dashboard > Apps & Credentials > Sandbox.
+- Crea una nuova app (es: "FacileSconti Sandbox").
+- Copia:
+  - Client ID
+  - Secret
+
+3) INSERISCI CREDENZIALI SANDBOX NEL PROGETTO
+----------------------------------------------
+- File: FacileSconti.Web/appsettings.Development.json
+- Sezione:
+  "PayPal": {
+    "Enabled": true,
+    "Environment": "Sandbox",
+    "ClientId": "paypal_sandbox_client_id",
+    "ClientSecret": "paypal_sandbox_client_secret",
+    "CurrencyCode": "EUR"
+  }
+
+4) TEST END-TO-END IN AMBIENTE SANDBOX
+--------------------------------------
+- Avvia il sito.
+- Vai in area Customer > Rinnovo.
+- Seleziona metodo "PayPal".
+- Verifica apertura pop-up PayPal.
+- Completa pagamento con account buyer sandbox.
+- Verifica risposta positiva di "capture" e redirect finale.
+
+5) PASSAGGIO IN PRODUZIONE
+--------------------------
+- In Developer Dashboard > Apps & Credentials > Live.
+- Crea/usa app LIVE e copia Client ID + Secret LIVE.
+- In produzione imposta:
+  - PayPal:Enabled = true
+  - PayPal:Environment = Production
+  - PayPal:ClientId = (live)
+  - PayPal:ClientSecret = (live)
+  - PayPal:CurrencyCode = EUR
+
+6) CHECKLIST BLOCCANTI (SE IL POP-UP NON SI APRE)
+--------------------------------------------------
+- Dominio non HTTPS (PayPal richiede HTTPS in produzione).
+- Client ID vuoto o errato.
+- SDK JS non caricato (blocco CSP/adblock/script error).
+- Browser blocca popup o cookie di terze parti.
+- Mismatch ambiente:
+  - Client Sandbox con endpoint Production (o viceversa).
+- Errore CORS o token OAuth non ottenuto lato server.
+
+7) LOG E SICUREZZA
+------------------
+- Non committare mai secret reali su git.
+- Salvare secret in variabili ambiente / secret manager.
+- Loggare order id e capture id per audit.
+- Validare sempre server-side importi e piano selezionato.
+
+NOTE IMPLEMENTATIVE NEL CODICE
+------------------------------
+- Configurazione PayPal in:
+  - FacileSconti.Web/Options/PayPalOptions.cs
+  - FacileSconti.Web/appsettings*.json
+- Flusso ordine/cattura:
+  - POST /Customer/CouponManagement/CreatePayPalOrder
+  - POST /Customer/CouponManagement/CapturePayPalOrder
+- Vista rinnovo con bottone PayPal SDK:
+  - FacileSconti.Web/Areas/Customer/Views/CouponManagement/Renewal.cshtml
