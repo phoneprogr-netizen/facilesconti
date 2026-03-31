@@ -1,6 +1,7 @@
 using FacileSconti.Application.Interfaces;
 using FacileSconti.Domain.Entities;
 using FacileSconti.Infrastructure.Data;
+using FacileSconti.Infrastructure.Options;
 using FacileSconti.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -25,7 +26,11 @@ public static class ServiceCollectionExtensions
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
 
+        services.Configure<TurboSmtpOptions>(configuration.GetSection(TurboSmtpOptions.SectionName));
+        services.AddHttpClient(nameof(TurboSmtpEmailService));
+
         services.AddScoped<ICouponService, CouponService>();
+        services.AddScoped<IEmailService, TurboSmtpEmailService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddSingleton<IQrCodeService, QrCodeService>();
 
