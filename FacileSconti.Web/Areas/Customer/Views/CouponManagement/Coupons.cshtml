@@ -1,1 +1,16 @@
-<h1>Cliente - Coupons</h1>
+@{ ViewData["Title"] = "I miei coupon"; }
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Gestione coupon</h1>
+    <a asp-action="CreateCoupon" class="btn btn-primary">Nuovo coupon</a>
+</div>
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light"><tr><th>Titolo</th><th>Categoria</th><th>Scadenza</th><th>Stato</th><th></th></tr></thead>
+            <tbody>
+                <tr><td>Sconto pranzo 20%</td><td>Ristorazione</td><td>30/04/2026</td><td><span class="badge bg-success">Attivo</span></td><td><a asp-action="EditCoupon" asp-route-id="1" class="btn btn-sm btn-outline-secondary">Modifica</a></td></tr>
+                <tr><td>Aperitivo 2x1</td><td>Food</td><td>18/04/2026</td><td><span class="badge bg-warning text-dark">In revisione</span></td><td><a asp-action="EditCoupon" asp-route-id="2" class="btn btn-sm btn-outline-secondary">Modifica</a></td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>

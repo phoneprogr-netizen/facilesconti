@@ -12,3 +12,38 @@
   border: 1px solid #e9ecef;
   background: #fff;
 }
+
+.coupon-card-image-wrap {
+  height: 180px;
+  overflow: hidden;
+  border-radius: 1rem 1rem 0 0;
+  background: #f8f9fa;
+}
+
+.coupon-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.coupon-card-image-placeholder {
+  font-size: .9rem;
+}
+
+.coupon-detail-card {
+  overflow: hidden;
+}
+
+.coupon-detail-image {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+}
+
+.business-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 1px solid #e9ecef;
+}

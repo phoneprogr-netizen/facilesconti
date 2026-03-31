@@ -7,6 +7,8 @@ public class CouponCardDto
     public string Slug { get; set; } = string.Empty;
     public string CategoryName { get; set; } = string.Empty;
     public string BusinessName { get; set; } = string.Empty;
+    public string? BusinessLogoPath { get; set; }
+    public string? BusinessCity { get; set; }
     public string? ImagePath { get; set; }
     public DateOnly ValidTo { get; set; }
     public int DownloadsCount { get; set; }

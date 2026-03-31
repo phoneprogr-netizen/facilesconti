@@ -1,1 +1,15 @@
-<h1>Cliente - Profile</h1>
+@{ ViewData["Title"] = "Profilo cliente"; }
+<h1 class="h3 mb-3">Profilo attività</h1>
+<p class="text-muted">Gestisci i dati pubblici visualizzati nelle pagine coupon.</p>
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form class="row g-3">
+            <div class="col-md-6"><label class="form-label">Nome attività</label><input class="form-control" value="La Bottega del Gusto" /></div>
+            <div class="col-md-6"><label class="form-label">Email</label><input class="form-control" value="info@bottegadelgusto.it" /></div>
+            <div class="col-md-6"><label class="form-label">Telefono</label><input class="form-control" value="+39 010 1234567" /></div>
+            <div class="col-md-6"><label class="form-label">Città</label><input class="form-control" value="Genova" /></div>
+            <div class="col-12"><label class="form-label">Descrizione</label><textarea class="form-control" rows="3">Locale specializzato in prodotti artigianali e offerte settimanali.</textarea></div>
+            <div class="col-12"><button class="btn btn-primary" type="button">Salva modifiche</button></div>
+        </form>
+    </div>
+</div>

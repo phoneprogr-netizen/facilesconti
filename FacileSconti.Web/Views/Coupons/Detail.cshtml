@@ -1,10 +1,81 @@
-@model FacileSconti.Application.DTOs.CouponCardDto
-<h1>@Model.Title</h1>
-<p><strong>Categoria:</strong> @Model.CategoryName</p>
-<p><strong>Cliente:</strong> @Model.BusinessName</p>
-<p><strong>Scadenza:</strong> @Model.ValidTo</p>
-<form asp-action="Download" method="post">
-  @Html.AntiForgeryToken()
-  <input type="hidden" name="couponId" value="@Model.Id"/>
-  <button class="btn btn-success">Scarica coupon</button>
-</form>
+@model FacileSconti.Web.ViewModels.CouponDetailViewModel
+@{
+    ViewData["Title"] = Model.Coupon.Title;
+}
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0 coupon-detail-card">
+            @if (!string.IsNullOrWhiteSpace(Model.Coupon.ImagePath))
+            {
+                <img src="@Model.Coupon.ImagePath" class="coupon-detail-image" alt="Immagine coupon @Model.Coupon.Title" />
+            }
+            <div class="card-body p-4">
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                    <span class="badge bg-primary">@Model.Coupon.CategoryName</span>
+                    @if (Model.Coupon.IsBoostedInHome)
+                    {
+                        <span class="badge bg-warning text-dark">In evidenza</span>
+                    }
+                </div>
+
+                <h1 class="h3 fw-bold mb-3">@Model.Coupon.Title</h1>
+                <p class="text-secondary mb-3">Valido fino al <strong>@Model.Coupon.ValidTo.ToString("dd/MM/yyyy")</strong></p>
+
+                <form asp-action="Download" method="post" class="d-inline-block">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="couponId" value="@Model.Coupon.Id" />
+                    <button class="btn btn-success">Scarica coupon</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Cliente</h2>
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    @if (!string.IsNullOrWhiteSpace(Model.Coupon.BusinessLogoPath))
+                    {
+                        <img src="@Model.Coupon.BusinessLogoPath" class="business-logo" alt="Logo @Model.Coupon.BusinessName" />
+                    }
+                    else
+                    {
+                        <div class="business-logo d-flex align-items-center justify-content-center text-muted bg-light">Logo</div>
+                    }
+                    <div>
+                        <div class="fw-semibold">@Model.Coupon.BusinessName</div>
+                        @if (!string.IsNullOrWhiteSpace(Model.Coupon.BusinessCity))
+                        {
+                            <div class="small text-muted">@Model.Coupon.BusinessCity</div>
+                        }
+                    </div>
+                </div>
+
+                <div class="small text-muted">Download già effettuati: @Model.Coupon.DownloadsCount</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="mt-5">
+    <h2 class="h4 mb-3">Altri coupon simili</h2>
+    <div class="row g-3">
+        @if (Model.SimilarCoupons.Any())
+        {
+            @foreach (var coupon in Model.SimilarCoupons)
+            {
+                <div class="col-md-6 col-xl-3">
+                    <partial name="_CouponCard" model="coupon" />
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="alert alert-info rounded-4 mb-0">Nessun coupon simile disponibile al momento.</div>
+            </div>
+        }
+    </div>
+</section>
